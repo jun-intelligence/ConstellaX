@@ -275,19 +275,24 @@ alter table public.contracts enable row level security;
 alter table public.approval_events enable row level security;
 alter table public.audit_events enable row level security;
 
+drop policy if exists "Users can read visible profiles" on public.users;
 create policy "Users can read visible profiles" on public.users
 for select to authenticated using (true);
 
+drop policy if exists "Users can update own profile" on public.users;
 create policy "Users can update own profile" on public.users
 for update to authenticated using (auth.uid() = id) with check (auth.uid() = id);
 
+drop policy if exists "Users can create own profile" on public.users;
 create policy "Users can create own profile" on public.users
 for insert to authenticated with check (auth.uid() = id);
 
+drop policy if exists "Campaign participants can read campaigns" on public.campaigns;
 create policy "Campaign participants can read campaigns" on public.campaigns
 for select to authenticated
 using (auth.uid() = brand_id or auth.uid() = agency_id);
 
+drop policy if exists "Brands and agencies can create campaigns" on public.campaigns;
 create policy "Brands and agencies can create campaigns" on public.campaigns
 for insert to authenticated
 with check (
@@ -295,11 +300,13 @@ with check (
   or auth.uid() = agency_id
 );
 
+drop policy if exists "Campaign owners can update campaigns" on public.campaigns;
 create policy "Campaign owners can update campaigns" on public.campaigns
 for update to authenticated
 using (auth.uid() = brand_id or auth.uid() = agency_id)
 with check (auth.uid() = brand_id or auth.uid() = agency_id);
 
+drop policy if exists "Deal participants can read deals" on public.deals;
 create policy "Deal participants can read deals" on public.deals
 for select to authenticated
 using (
@@ -309,6 +316,7 @@ using (
   or auth.uid() = creator_id
 );
 
+drop policy if exists "Brands and agencies can create deals" on public.deals;
 create policy "Brands and agencies can create deals" on public.deals
 for insert to authenticated
 with check (
@@ -316,6 +324,7 @@ with check (
   or auth.uid() = agency_id
 );
 
+drop policy if exists "Deal participants can update deals" on public.deals;
 create policy "Deal participants can update deals" on public.deals
 for update to authenticated
 using (
@@ -331,6 +340,7 @@ with check (
   or auth.uid() = creator_id
 );
 
+drop policy if exists "Participants can read deliverables" on public.deliverables;
 create policy "Participants can read deliverables" on public.deliverables
 for select to authenticated
 using (
@@ -346,6 +356,7 @@ using (
   )
 );
 
+drop policy if exists "Deal owners can create deliverables" on public.deliverables;
 create policy "Deal owners can create deliverables" on public.deliverables
 for insert to authenticated
 with check (
@@ -356,6 +367,7 @@ with check (
   )
 );
 
+drop policy if exists "Participants can update deliverables" on public.deliverables;
 create policy "Participants can update deliverables" on public.deliverables
 for update to authenticated
 using (
@@ -383,6 +395,7 @@ with check (
   )
 );
 
+drop policy if exists "Participants can read payment terms" on public.payment_terms;
 create policy "Participants can read payment terms" on public.payment_terms
 for select to authenticated
 using (
@@ -398,6 +411,7 @@ using (
   )
 );
 
+drop policy if exists "Brands agencies and managers can manage payment terms" on public.payment_terms;
 create policy "Brands agencies and managers can manage payment terms" on public.payment_terms
 for all to authenticated
 using (
@@ -415,6 +429,7 @@ with check (
   )
 );
 
+drop policy if exists "Participants can read financial records" on public.invoices;
 create policy "Participants can read financial records" on public.invoices
 for select to authenticated
 using (
@@ -430,6 +445,7 @@ using (
   )
 );
 
+drop policy if exists "Brands agencies and managers can manage invoices" on public.invoices;
 create policy "Brands agencies and managers can manage invoices" on public.invoices
 for all to authenticated
 using (
@@ -447,6 +463,7 @@ with check (
   )
 );
 
+drop policy if exists "Participants can read payments" on public.payments;
 create policy "Participants can read payments" on public.payments
 for select to authenticated
 using (
@@ -462,6 +479,7 @@ using (
   )
 );
 
+drop policy if exists "Brands agencies and managers can manage payments" on public.payments;
 create policy "Brands agencies and managers can manage payments" on public.payments
 for all to authenticated
 using (
@@ -479,6 +497,7 @@ with check (
   )
 );
 
+drop policy if exists "Participants can read contracts" on public.contracts;
 create policy "Participants can read contracts" on public.contracts
 for select to authenticated
 using (
@@ -494,6 +513,7 @@ using (
   )
 );
 
+drop policy if exists "Brands agencies and managers can manage contracts" on public.contracts;
 create policy "Brands agencies and managers can manage contracts" on public.contracts
 for all to authenticated
 using (
@@ -511,15 +531,19 @@ with check (
   )
 );
 
+drop policy if exists "Participants can read approval events" on public.approval_events;
 create policy "Participants can read approval events" on public.approval_events
 for select to authenticated using (actor_id = auth.uid());
 
+drop policy if exists "Authenticated users can create approval events" on public.approval_events;
 create policy "Authenticated users can create approval events" on public.approval_events
 for insert to authenticated with check (actor_id = auth.uid());
 
+drop policy if exists "Participants can read audit events" on public.audit_events;
 create policy "Participants can read audit events" on public.audit_events
 for select to authenticated using (actor_id = auth.uid());
 
+drop policy if exists "Authenticated users can create audit events" on public.audit_events;
 create policy "Authenticated users can create audit events" on public.audit_events
 for insert to authenticated with check (actor_id = auth.uid());
 
