@@ -13,12 +13,15 @@ export const deliverableStatusLabels: Record<DeliverableStatus, string> = {
   not_started: "Not started",
   in_progress: "In progress",
   submitted: "Submitted",
+  changes_requested: "Changes requested",
   approved: "Approved"
 };
 
 export const paymentStatusLabels: Record<PaymentStatus, string> = {
   not_started: "Not started",
-  pending: "Pending",
+  scheduled: "Scheduled",
+  partial: "Partial",
   paid: "Paid",
+  overdue: "Overdue",
   failed: "Failed"
 };

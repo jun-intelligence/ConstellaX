@@ -3984,9 +3984,22 @@ textarea {
 }
 
 .statusPill.changes_requested,
-.statusPill.blocked {
+.statusPill.blocked,
+.statusPill.rejected {
   background: #fdecef;
   color: #a61b3b;
+}
+
+.statusPill.submitted {
+  background: var(--zen-sky-soft);
+  color: #1f6f9f;
+}
+
+.statusPill.shortlisted,
+.statusPill.accepted,
+.statusPill.deal_created {
+  background: var(--zen-sage-soft);
+  color: #146c43;
 }
 
 .dealTable {
@@ -4338,6 +4351,9 @@ textarea {
   }
 
   .appleCardGrid,
+  .dealCreationGrid,
+  .liveBudgetCards,
+  .liveCriteriaGrid,
   .paymentTermsGrid,
   .trustPillarGrid,
   .trustWorkflowGrid,
@@ -4444,6 +4460,7 @@ textarea {
   }
 
   .stats,
+  .dealCreationGrid,
   .dealForm,
   .paymentForm,
   .brandHero,
@@ -4513,6 +4530,15 @@ textarea {
   .notificationPanel,
   .demoStep {
     grid-template-columns: 1fr;
+  }
+
+  .liveFieldGrid,
+  .liveCampaignDates {
+    grid-template-columns: 1fr;
+  }
+
+  .liveControlPanel {
+    position: static;
   }
 
   .appleHero {
@@ -4929,7 +4955,9 @@ textarea {
 }
 
 .liveCampaignForm input,
-.liveCampaignForm textarea {
+.liveCampaignForm textarea,
+.liveCampaignForm select,
+.liveControlPanel select {
   background: #fff;
   border: 1px solid rgba(22, 22, 22, 0.1);
   border-radius: 14px;
@@ -4989,4 +5017,254 @@ textarea {
 
 .loadingShell.compact {
   min-height: 180px;
+}
+
+.liveWorkflowTabs {
+  background: rgba(255, 255, 255, 0.72);
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  border-radius: 22px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 8px;
+}
+
+.liveWorkflowTabs button {
+  align-items: center;
+  background: transparent;
+  border: 0;
+  border-radius: 16px;
+  color: #68726e;
+  cursor: pointer;
+  display: inline-flex;
+  font: inherit;
+  font-weight: 850;
+  gap: 8px;
+  min-height: 42px;
+  padding: 0 14px;
+  transition: background 180ms ease, color 180ms ease, transform 180ms ease;
+}
+
+.liveWorkflowTabs button:hover {
+  background: var(--zen-sage-soft);
+  color: var(--brand-dark);
+  transform: translateY(-1px);
+}
+
+.liveWorkflowTabs button.active {
+  background: #111;
+  color: #fff;
+}
+
+.liveCampaignSuite {
+  align-items: start;
+}
+
+.liveFieldGrid {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.liveFieldGrid label,
+.liveControlPanel label {
+  color: #77736b;
+  display: grid;
+  font-size: 0.78rem;
+  font-weight: 750;
+  gap: 8px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.campaignSelectRow {
+  align-items: center;
+  background: #f8faf8;
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  color: inherit;
+  cursor: pointer;
+  display: grid;
+  gap: 14px;
+  grid-template-columns: 1fr auto;
+  padding: 16px;
+  text-align: left;
+  transition: background 180ms ease, border-color 180ms ease, transform 180ms ease;
+}
+
+.campaignSelectRow:hover,
+.campaignSelectRow.active {
+  background: var(--zen-sky-soft);
+  border-color: rgba(90, 174, 232, 0.42);
+  transform: translateY(-1px);
+}
+
+.campaignSelectRow p {
+  color: var(--muted);
+  margin: 6px 0 0;
+}
+
+.campaignSelectRow span {
+  font-weight: 950;
+}
+
+.liveControlPanel {
+  position: sticky;
+  top: 92px;
+}
+
+.liveBudgetCards,
+.liveCriteriaGrid,
+.dealCreationGrid {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.liveBudgetCards div,
+.liveCriteriaGrid div,
+.dealCreationCard,
+.applicationQueue article {
+  background: #f8faf8;
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  display: grid;
+  gap: 8px;
+  padding: 16px;
+}
+
+.liveBudgetCards span,
+.liveCriteriaGrid span {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.liveBudgetCards strong {
+  font-size: clamp(20px, 2vw, 28px);
+  letter-spacing: 0;
+}
+
+.liveCriteriaGrid strong {
+  line-height: 1.45;
+}
+
+.liveBudgetBar {
+  background: #eef2ef;
+  border-radius: 999px;
+  display: flex;
+  height: 16px;
+  overflow: hidden;
+}
+
+.liveBudgetBar span:nth-child(1) {
+  background: var(--zen-sage);
+}
+
+.liveBudgetBar span:nth-child(2) {
+  background: var(--zen-amber);
+}
+
+.liveBudgetBar span:nth-child(3) {
+  background: var(--zen-sky);
+}
+
+.trustNote {
+  align-items: flex-start;
+  background: var(--zen-sage-soft);
+  border: 1px solid rgba(84, 185, 143, 0.28);
+  border-radius: 18px;
+  color: var(--brand-dark);
+  display: flex;
+  gap: 10px;
+  padding: 16px;
+}
+
+.trustNote p {
+  line-height: 1.5;
+  margin: 0;
+}
+
+.applicationQueue {
+  display: grid;
+  gap: 12px;
+}
+
+.applicationQueue h3,
+.dealCreationCard h3 {
+  margin: 0;
+}
+
+.applicationQueue p,
+.dealCreationCard p {
+  color: var(--muted);
+  line-height: 1.5;
+  margin: 0;
+}
+
+.liveApplicantMeta,
+.liveActionRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.liveApplicantMeta span {
+  background: #fff;
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  border-radius: 999px;
+  color: #53605b;
+  font-size: 13px;
+  font-weight: 850;
+  padding: 8px 10px;
+}
+
+.liveActionRow button,
+.dealCreationCard button {
+  align-items: center;
+  background: #111;
+  border: 0;
+  border-radius: 14px;
+  color: #fff;
+  cursor: pointer;
+  display: inline-flex;
+  font: inherit;
+  font-weight: 850;
+  gap: 8px;
+  min-height: 42px;
+  padding: 0 12px;
+  transition: background 180ms ease, transform 180ms ease;
+}
+
+.liveActionRow button:nth-child(1) {
+  background: var(--brand);
+}
+
+.liveActionRow button:nth-child(2) {
+  background: #7b4f42;
+}
+
+.liveActionRow button:hover,
+.dealCreationCard button:hover {
+  background: var(--brand-dark);
+  transform: translateY(-1px);
+}
+
+.liveActionRow button:disabled,
+.dealCreationCard button:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+  transform: none;
+}
+
+.dealCreationCard {
+  align-content: start;
+}
+
+.dealCreationCard .appleCta.compact {
+  border-radius: 14px;
+  min-height: 44px;
+  width: 100%;
 }

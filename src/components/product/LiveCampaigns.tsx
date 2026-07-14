@@ -1,9 +1,24 @@
 "use client";
 
-import { FormEvent, useEffect, useState } from "react";
-import { ArrowRight, BriefcaseBusiness, Loader2, Plus, ShieldCheck } from "lucide-react";
+import { FormEvent, useEffect, useMemo, useState } from "react";
+import {
+  ArrowRight,
+  BadgeDollarSign,
+  BriefcaseBusiness,
+  CheckCircle2,
+  ClipboardCheck,
+  Loader2,
+  Plus,
+  Send,
+  ShieldCheck,
+  Sparkles,
+  Users
+} from "lucide-react";
 import { isSupabaseConfigured, supabase } from "@/lib/supabase/client";
 import type { Profile } from "@/lib/types";
+
+type CompensationType = "organic_seeding" | "paid" | "token_fee" | "hybrid";
+type ApplicationStatus = "submitted" | "shortlisted" | "rejected" | "accepted" | "deal_created";
 
 type LiveCampaign = {
   id: string;
@@ -14,26 +29,156 @@ type LiveCampaign = {
   currency: string;
   start_date: string | null;
   end_date: string | null;
+  compensation_type: CompensationType;
+  creator_min_fee: number;
+  creator_max_fee: number;
+  product_value: number;
+  token_fee_amount: number;
+  creator_slots: number;
+  application_status: string;
+  target_creator_niches: string[];
+  target_platforms: string[];
+  target_locations: string[];
+  min_followers: number;
+  max_followers: number | null;
+  creator_requirements: string | null;
+  brand_id: string | null;
+  agency_id: string | null;
   created_at: string;
 };
 
-const initialForm = {
+type CampaignApplication = {
+  id: string;
+  campaign_id: string;
+  creator_id: string;
+  status: ApplicationStatus;
+  compensation_type: CompensationType;
+  proposed_fee: number;
+  token_fee_amount: number;
+  product_value: number;
+  pitch: string;
+  social_handle: string | null;
+  portfolio_url: string | null;
+  audience_notes: string | null;
+  created_at: string;
+};
+
+const initialCampaignForm = {
   name: "",
   objective: "",
   campaign_budget: "25000",
+  compensation_type: "paid" as CompensationType,
+  creator_min_fee: "1000",
+  creator_max_fee: "3500",
+  product_value: "0",
+  token_fee_amount: "0",
+  creator_slots: "5",
+  target_creator_niches: "beauty, lifestyle, wellness",
+  target_platforms: "Instagram, TikTok",
+  target_locations: "Singapore, Malaysia",
+  min_followers: "10000",
+  max_followers: "150000",
+  creator_requirements: "Strong engagement quality, clean brand safety history, able to submit draft for approval.",
   start_date: "",
   end_date: ""
 };
 
+const initialApplicationForm = {
+  compensation_type: "paid" as CompensationType,
+  proposed_fee: "2500",
+  token_fee_amount: "0",
+  product_value: "0",
+  social_handle: "",
+  portfolio_url: "",
+  audience_notes: "Audience is mostly women 24-34 with strong interest in beauty, routine content, and premium lifestyle.",
+  pitch: "I can create a calm product-led story with one hero reel and supporting story frames that show real usage."
+};
+
+const compensationLabels: Record<CompensationType, string> = {
+  organic_seeding: "Organic seeding",
+  paid: "Paid",
+  token_fee: "Token fee",
+  hybrid: "Hybrid"
+};
+
+const statusLabels: Record<ApplicationStatus, string> = {
+  submitted: "Submitted",
+  shortlisted: "Shortlisted",
+  rejected: "Rejected",
+  accepted: "Accepted",
+  deal_created: "Deal created"
+};
+
+function listFromInput(value: string) {
+  return value
+    .split(",")
+    .map((item) => item.trim())
+    .filter(Boolean);
+}
+
+function money(value: number | string | null | undefined, currency = "USD") {
+  return `${currency} ${Number(value || 0).toLocaleString()}`;
+}
+
 export function LiveCampaigns() {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [campaigns, setCampaigns] = useState<LiveCampaign[]>([]);
-  const [form, setForm] = useState(initialForm);
+  const [applications, setApplications] = useState<CampaignApplication[]>([]);
+  const [creatorProfiles, setCreatorProfiles] = useState<Record<string, Profile>>({});
+  const [campaignForm, setCampaignForm] = useState(initialCampaignForm);
+  const [applicationForm, setApplicationForm] = useState(initialApplicationForm);
+  const [selectedCampaignId, setSelectedCampaignId] = useState("");
+  const [activeTab, setActiveTab] = useState<"brief" | "applications" | "deals">("brief");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState("");
 
-  async function loadCampaigns() {
+  const selectedCampaign = useMemo(
+    () => campaigns.find((campaign) => campaign.id === selectedCampaignId) || campaigns[0],
+    [campaigns, selectedCampaignId]
+  );
+
+  const isCampaignOwner = profile ? ["brand", "agency"].includes(profile.role) : false;
+  const isCreator = profile?.role === "creator";
+
+  async function loadApplications(campaignId: string) {
+    if (!supabase || !campaignId) return;
+
+    const { data, error } = await supabase
+      .from("campaign_applications")
+      .select("*")
+      .eq("campaign_id", campaignId)
+      .order("created_at", { ascending: false });
+
+    if (error) {
+      setApplications([]);
+      setMessage(error.message);
+      return;
+    }
+
+    const applicationRows = (data || []) as CampaignApplication[];
+    setApplications(applicationRows);
+
+    const creatorIds = Array.from(new Set(applicationRows.map((application) => application.creator_id)));
+    if (creatorIds.length === 0) {
+      setCreatorProfiles({});
+      return;
+    }
+
+    const { data: profiles } = await supabase
+      .from("users")
+      .select("id,email,full_name,role,company_name,created_at")
+      .in("id", creatorIds);
+
+    setCreatorProfiles(
+      ((profiles || []) as Profile[]).reduce<Record<string, Profile>>((map, creator) => {
+        map[creator.id] = creator;
+        return map;
+      }, {})
+    );
+  }
+
+  async function loadCampaigns(nextSelectedCampaignId?: string) {
     if (!isSupabaseConfigured || !supabase) {
       setLoading(false);
       setMessage("Supabase is not configured yet.");
@@ -66,20 +211,39 @@ export function LiveCampaigns() {
       return;
     }
 
-    setProfile(profileData);
+    const currentProfile = profileData as Profile;
+    setProfile(currentProfile);
 
-    const ownerColumn = profileData.role === "agency" ? "agency_id" : "brand_id";
-    const { data, error } = await supabase
+    let query = supabase
       .from("campaigns")
-      .select("id,name,objective,status,campaign_budget,currency,start_date,end_date,created_at")
-      .eq(ownerColumn, user.id)
+      .select(
+        "id,name,objective,status,campaign_budget,currency,start_date,end_date,compensation_type,creator_min_fee,creator_max_fee,product_value,token_fee_amount,creator_slots,application_status,target_creator_niches,target_platforms,target_locations,min_followers,max_followers,creator_requirements,brand_id,agency_id,created_at"
+      )
       .order("created_at", { ascending: false });
 
-    if (error) {
-      setMessage(error.message);
+    if (currentProfile.role === "agency") {
+      query = query.eq("agency_id", user.id);
+    } else if (currentProfile.role === "brand") {
+      query = query.eq("brand_id", user.id);
     } else {
-      setCampaigns(data || []);
+      query = query.eq("application_status", "open");
     }
+
+    const { data, error } = await query;
+
+    if (error) {
+      setCampaigns([]);
+      setMessage(error.message);
+      setLoading(false);
+      return;
+    }
+
+    const rows = (data || []) as LiveCampaign[];
+    setCampaigns(rows);
+
+    const nextId = nextSelectedCampaignId || selectedCampaignId || rows[0]?.id || "";
+    setSelectedCampaignId(nextId);
+    if (nextId) await loadApplications(nextId);
 
     setLoading(false);
   }
@@ -93,7 +257,7 @@ export function LiveCampaigns() {
 
     if (!isSupabaseConfigured || !supabase || !profile) return;
 
-    if (!["brand", "agency"].includes(profile.role)) {
+    if (!isCampaignOwner) {
       setMessage("Only brand and agency accounts can create campaigns in this MVP workflow.");
       return;
     }
@@ -101,29 +265,176 @@ export function LiveCampaigns() {
     setSaving(true);
     setMessage("");
 
-    const brandId = profile.role === "brand" ? profile.id : null;
-    const agencyId = profile.role === "agency" ? profile.id : null;
-
-    const { error } = await supabase.from("campaigns").insert({
-      name: form.name,
-      objective: form.objective,
-      brand_id: brandId,
-      agency_id: agencyId,
-      campaign_budget: Number(form.campaign_budget || 0),
-      currency: "USD",
-      start_date: form.start_date || null,
-      end_date: form.end_date || null,
-      status: "planning"
-    });
+    const { data, error } = await supabase
+      .from("campaigns")
+      .insert({
+        name: campaignForm.name,
+        objective: campaignForm.objective,
+        brand_id: profile.role === "brand" ? profile.id : null,
+        agency_id: profile.role === "agency" ? profile.id : null,
+        campaign_budget: Number(campaignForm.campaign_budget || 0),
+        currency: "USD",
+        compensation_type: campaignForm.compensation_type,
+        creator_min_fee: Number(campaignForm.creator_min_fee || 0),
+        creator_max_fee: Number(campaignForm.creator_max_fee || 0),
+        product_value: Number(campaignForm.product_value || 0),
+        token_fee_amount: Number(campaignForm.token_fee_amount || 0),
+        creator_slots: Number(campaignForm.creator_slots || 1),
+        target_creator_niches: listFromInput(campaignForm.target_creator_niches),
+        target_platforms: listFromInput(campaignForm.target_platforms),
+        target_locations: listFromInput(campaignForm.target_locations),
+        min_followers: Number(campaignForm.min_followers || 0),
+        max_followers: campaignForm.max_followers ? Number(campaignForm.max_followers) : null,
+        creator_requirements: campaignForm.creator_requirements,
+        start_date: campaignForm.start_date || null,
+        end_date: campaignForm.end_date || null,
+        application_status: "open",
+        status: "planning"
+      })
+      .select("id")
+      .single();
 
     if (error) {
       setMessage(error.message);
     } else {
-      setForm(initialForm);
-      await loadCampaigns();
-      setMessage("Campaign created and stored in Supabase.");
+      setCampaignForm(initialCampaignForm);
+      await loadCampaigns(data?.id);
+      setMessage("Campaign created. Creators can now submit interest from the creator view.");
     }
 
+    setSaving(false);
+  }
+
+  async function submitApplication(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!supabase || !profile || !selectedCampaign) return;
+
+    if (!isCreator) {
+      setMessage("Only creator accounts can submit interest in this campaign.");
+      return;
+    }
+
+    setSaving(true);
+    setMessage("");
+
+    const { error } = await supabase.from("campaign_applications").insert({
+      campaign_id: selectedCampaign.id,
+      creator_id: profile.id,
+      compensation_type: applicationForm.compensation_type,
+      proposed_fee: Number(applicationForm.proposed_fee || 0),
+      token_fee_amount: Number(applicationForm.token_fee_amount || 0),
+      product_value: Number(applicationForm.product_value || 0),
+      pitch: applicationForm.pitch,
+      social_handle: applicationForm.social_handle || null,
+      portfolio_url: applicationForm.portfolio_url || null,
+      audience_notes: applicationForm.audience_notes || null,
+      status: "submitted"
+    });
+
+    if (error) {
+      setMessage(error.message.includes("duplicate") ? "You have already submitted interest for this campaign." : error.message);
+    } else {
+      setApplicationForm(initialApplicationForm);
+      await loadApplications(selectedCampaign.id);
+      setMessage("Interest submitted. The campaign owner can now review and create a deal.");
+    }
+
+    setSaving(false);
+  }
+
+  async function updateApplicationStatus(application: CampaignApplication, status: ApplicationStatus) {
+    if (!supabase || !selectedCampaign) return;
+    setSaving(true);
+    setMessage("");
+
+    const { error } = await supabase
+      .from("campaign_applications")
+      .update({ status })
+      .eq("id", application.id);
+
+    if (error) {
+      setMessage(error.message);
+    } else {
+      await loadApplications(selectedCampaign.id);
+      setMessage(`Application marked as ${statusLabels[status].toLowerCase()}.`);
+    }
+
+    setSaving(false);
+  }
+
+  async function createDealFromApplication(application: CampaignApplication) {
+    if (!supabase || !selectedCampaign) return;
+    setSaving(true);
+    setMessage("");
+
+    const creatorFee = application.proposed_fee || selectedCampaign.creator_max_fee || 0;
+    const creatorName = creatorProfiles[application.creator_id]?.full_name || "Creator";
+
+    const { data: deal, error } = await supabase
+      .from("deals")
+      .insert({
+        campaign_id: selectedCampaign.id,
+        title: `${selectedCampaign.name} - ${creatorName}`,
+        brief: selectedCampaign.objective,
+        brand_id: selectedCampaign.brand_id,
+        agency_id: selectedCampaign.agency_id,
+        creator_id: application.creator_id,
+        status: "pending_creator",
+        campaign_budget: selectedCampaign.campaign_budget,
+        creator_fee: creatorFee,
+        agency_fee: selectedCampaign.agency_id ? Math.round(selectedCampaign.campaign_budget * 0.15) : 0,
+        platform_fee: Math.round(selectedCampaign.campaign_budget * 0.03),
+        compensation_type: application.compensation_type,
+        payment_status: "scheduled",
+        contract_status: "drafting",
+        nda_status: "drafting",
+        due_date: selectedCampaign.end_date,
+        usage_rights: "Usage rights to be confirmed before creator approval."
+      })
+      .select("id")
+      .single();
+
+    if (error || !deal) {
+      setMessage(error?.message || "Could not create deal.");
+      setSaving(false);
+      return;
+    }
+
+    await supabase.from("payment_terms").insert({
+      deal_id: deal.id,
+      custom_deposit: Math.round(creatorFee * 0.3),
+      milestone_payments: [
+        { name: "Draft approval", amount: Math.round(creatorFee * 0.4) },
+        { name: "Final delivery", amount: Math.round(creatorFee * 0.3) }
+      ],
+      net_terms: "Net 30 after final content approval",
+      production_budget: selectedCampaign.product_value,
+      usage_rights_fee: 0,
+      notes: compensationLabels[application.compensation_type]
+    });
+
+    await supabase.from("deliverables").insert([
+      {
+        deal_id: deal.id,
+        title: "Hero short-form video",
+        description: "Primary campaign deliverable for approval.",
+        format: "Reel / TikTok",
+        owner_id: application.creator_id,
+        due_date: selectedCampaign.end_date
+      },
+      {
+        deal_id: deal.id,
+        title: "Story support frames",
+        description: "Supporting content with campaign hashtag and brand tag.",
+        format: "Stories",
+        owner_id: application.creator_id,
+        due_date: selectedCampaign.end_date
+      }
+    ]);
+
+    await supabase.from("campaign_applications").update({ status: "deal_created" }).eq("id", application.id);
+    await loadApplications(selectedCampaign.id);
+    setMessage("Deal created with starter payment terms and deliverables.");
     setSaving(false);
   }
 
@@ -131,103 +442,584 @@ export function LiveCampaigns() {
     <main className="workspacePage">
       <header className="workspaceHeader compact">
         <div>
-          <p className="eyebrow">Live Supabase workflow</p>
-          <h1>Live campaigns</h1>
-          <p>Create and read campaign records from Supabase. This is the first real backend-backed workflow.</p>
+          <p className="eyebrow">Live campaign operating workflow</p>
+          <h1>Campaign deal creation</h1>
+          <p>
+            Structure the brief, control compensation, receive creator interest, shortlist applicants, and convert approved
+            creators into live deals.
+          </p>
         </div>
         <span className="statusPill active">Supabase connected</span>
       </header>
 
       {message ? <p className="formMessage">{message}</p> : null}
 
-      <section className="splitLayout">
-        <div className="workspacePanel">
-          <div className="panelTitle">
-            <div>
-              <h2>Create campaign</h2>
-              <p>For brand and agency accounts.</p>
-            </div>
-            <Plus size={18} />
-          </div>
-
-          <form className="liveCampaignForm" onSubmit={createCampaign}>
-            <input
-              placeholder="Campaign name"
-              value={form.name}
-              onChange={(event) => setForm((current) => ({ ...current, name: event.target.value }))}
-              required
-            />
-            <textarea
-              placeholder="Campaign objective"
-              value={form.objective}
-              onChange={(event) => setForm((current) => ({ ...current, objective: event.target.value }))}
-              required
-            />
-            <input
-              min="0"
-              placeholder="Budget"
-              type="number"
-              value={form.campaign_budget}
-              onChange={(event) => setForm((current) => ({ ...current, campaign_budget: event.target.value }))}
-              required
-            />
-            <div className="liveCampaignDates">
-              <label>
-                Start
-                <input
-                  type="date"
-                  value={form.start_date}
-                  onChange={(event) => setForm((current) => ({ ...current, start_date: event.target.value }))}
-                />
-              </label>
-              <label>
-                End
-                <input
-                  type="date"
-                  value={form.end_date}
-                  onChange={(event) => setForm((current) => ({ ...current, end_date: event.target.value }))}
-                />
-              </label>
-            </div>
-            <button type="submit" disabled={saving || !profile}>
-              {saving ? <Loader2 className="spin" size={18} /> : <ArrowRight size={18} />}
-              Create live campaign
+      <section className="liveWorkflowTabs" aria-label="Campaign workflow">
+        {[
+          { id: "brief", label: "Brief & budget", icon: BriefcaseBusiness },
+          { id: "applications", label: "Creator applications", icon: Users },
+          { id: "deals", label: "Deal creation", icon: ClipboardCheck }
+        ].map((item) => {
+          const Icon = item.icon;
+          return (
+            <button
+              className={activeTab === item.id ? "active" : ""}
+              key={item.id}
+              onClick={() => setActiveTab(item.id as "brief" | "applications" | "deals")}
+              type="button"
+            >
+              <Icon size={17} />
+              {item.label}
             </button>
-          </form>
-        </div>
-
-        <div className="workspacePanel">
-          <div className="panelTitle">
-            <div>
-              <h2>Your campaign records</h2>
-              <p>{profile ? `${profile.full_name} / ${profile.role}` : "Loading account..."}</p>
-            </div>
-            <ShieldCheck size={18} />
-          </div>
-
-          {loading ? (
-            <div className="loadingShell compact"><div /><div /><div /></div>
-          ) : campaigns.length === 0 ? (
-            <div className="emptyState">
-              <BriefcaseBusiness size={22} />
-              <strong>No live campaigns yet</strong>
-              <p>Create the first campaign to test the Supabase workflow.</p>
-            </div>
-          ) : (
-            <div className="dataRows">
-              {campaigns.map((campaign) => (
-                <article className="dataRow" key={campaign.id}>
-                  <div>
-                    <strong>{campaign.name}</strong>
-                    <p>{campaign.objective}</p>
-                  </div>
-                  <span>{campaign.currency} {Number(campaign.campaign_budget).toLocaleString()}</span>
-                </article>
-              ))}
-            </div>
-          )}
-        </div>
+          );
+        })}
       </section>
+
+      {loading ? (
+        <div className="workspacePanel">
+          <div className="loadingShell compact"><div /><div /><div /></div>
+        </div>
+      ) : (
+        <>
+          {activeTab === "brief" ? (
+            <section className="splitLayout liveCampaignSuite">
+              <div className="workspacePanel">
+                <div className="panelTitle">
+                  <div>
+                    <h2>{isCampaignOwner ? "Create campaign brief" : "Available campaigns"}</h2>
+                    <p>{profile ? `${profile.full_name} / ${profile.role}` : "Loading account..."}</p>
+                  </div>
+                  <Plus size={18} />
+                </div>
+
+                {isCampaignOwner ? (
+                  <form className="liveCampaignForm" onSubmit={createCampaign}>
+                    <input
+                      placeholder="Campaign name"
+                      value={campaignForm.name}
+                      onChange={(event) => setCampaignForm((current) => ({ ...current, name: event.target.value }))}
+                      required
+                    />
+                    <textarea
+                      placeholder="Campaign objective"
+                      value={campaignForm.objective}
+                      onChange={(event) => setCampaignForm((current) => ({ ...current, objective: event.target.value }))}
+                      required
+                    />
+                    <div className="liveFieldGrid">
+                      <label>
+                        Total budget
+                        <input
+                          min="0"
+                          type="number"
+                          value={campaignForm.campaign_budget}
+                          onChange={(event) => setCampaignForm((current) => ({ ...current, campaign_budget: event.target.value }))}
+                          required
+                        />
+                      </label>
+                      <label>
+                        Creator slots
+                        <input
+                          min="1"
+                          type="number"
+                          value={campaignForm.creator_slots}
+                          onChange={(event) => setCampaignForm((current) => ({ ...current, creator_slots: event.target.value }))}
+                          required
+                        />
+                      </label>
+                      <label>
+                        Compensation
+                        <select
+                          value={campaignForm.compensation_type}
+                          onChange={(event) =>
+                            setCampaignForm((current) => ({ ...current, compensation_type: event.target.value as CompensationType }))
+                          }
+                        >
+                          {Object.entries(compensationLabels).map(([value, label]) => (
+                            <option key={value} value={value}>{label}</option>
+                          ))}
+                        </select>
+                      </label>
+                      <label>
+                        Min creator fee
+                        <input
+                          min="0"
+                          type="number"
+                          value={campaignForm.creator_min_fee}
+                          onChange={(event) => setCampaignForm((current) => ({ ...current, creator_min_fee: event.target.value }))}
+                        />
+                      </label>
+                      <label>
+                        Max creator fee
+                        <input
+                          min="0"
+                          type="number"
+                          value={campaignForm.creator_max_fee}
+                          onChange={(event) => setCampaignForm((current) => ({ ...current, creator_max_fee: event.target.value }))}
+                        />
+                      </label>
+                      <label>
+                        Product value
+                        <input
+                          min="0"
+                          type="number"
+                          value={campaignForm.product_value}
+                          onChange={(event) => setCampaignForm((current) => ({ ...current, product_value: event.target.value }))}
+                        />
+                      </label>
+                      <label>
+                        Token fee
+                        <input
+                          min="0"
+                          type="number"
+                          value={campaignForm.token_fee_amount}
+                          onChange={(event) => setCampaignForm((current) => ({ ...current, token_fee_amount: event.target.value }))}
+                        />
+                      </label>
+                    </div>
+                    <div className="liveFieldGrid">
+                      <label>
+                        Creator niches
+                        <input
+                          value={campaignForm.target_creator_niches}
+                          onChange={(event) => setCampaignForm((current) => ({ ...current, target_creator_niches: event.target.value }))}
+                        />
+                      </label>
+                      <label>
+                        Platforms
+                        <input
+                          value={campaignForm.target_platforms}
+                          onChange={(event) => setCampaignForm((current) => ({ ...current, target_platforms: event.target.value }))}
+                        />
+                      </label>
+                      <label>
+                        Locations
+                        <input
+                          value={campaignForm.target_locations}
+                          onChange={(event) => setCampaignForm((current) => ({ ...current, target_locations: event.target.value }))}
+                        />
+                      </label>
+                      <label>
+                        Min followers
+                        <input
+                          min="0"
+                          type="number"
+                          value={campaignForm.min_followers}
+                          onChange={(event) => setCampaignForm((current) => ({ ...current, min_followers: event.target.value }))}
+                        />
+                      </label>
+                      <label>
+                        Max followers
+                        <input
+                          min="0"
+                          type="number"
+                          value={campaignForm.max_followers}
+                          onChange={(event) => setCampaignForm((current) => ({ ...current, max_followers: event.target.value }))}
+                        />
+                      </label>
+                    </div>
+                    <textarea
+                      placeholder="Creator requirements and approval notes"
+                      value={campaignForm.creator_requirements}
+                      onChange={(event) => setCampaignForm((current) => ({ ...current, creator_requirements: event.target.value }))}
+                    />
+                    <div className="liveCampaignDates">
+                      <label>
+                        Start
+                        <input
+                          type="date"
+                          value={campaignForm.start_date}
+                          onChange={(event) => setCampaignForm((current) => ({ ...current, start_date: event.target.value }))}
+                        />
+                      </label>
+                      <label>
+                        End
+                        <input
+                          type="date"
+                          value={campaignForm.end_date}
+                          onChange={(event) => setCampaignForm((current) => ({ ...current, end_date: event.target.value }))}
+                        />
+                      </label>
+                    </div>
+                    <button type="submit" disabled={saving || !profile}>
+                      {saving ? <Loader2 className="spin" size={18} /> : <ArrowRight size={18} />}
+                      Create live campaign
+                    </button>
+                  </form>
+                ) : (
+                  <CampaignList campaigns={campaigns} selectedCampaignId={selectedCampaign?.id} onSelect={setSelectedCampaignId} />
+                )}
+              </div>
+
+              <CampaignControlPanel
+                campaign={selectedCampaign}
+                campaigns={campaigns}
+                onSelect={(id) => {
+                  setSelectedCampaignId(id);
+                  loadApplications(id);
+                }}
+              />
+            </section>
+          ) : null}
+
+          {activeTab === "applications" ? (
+            <section className="splitLayout liveCampaignSuite">
+              <div className="workspacePanel">
+                <div className="panelTitle">
+                  <div>
+                    <h2>{isCreator ? "Submit interest" : "Applications queue"}</h2>
+                    <p>{selectedCampaign?.name || "Select a campaign"}</p>
+                  </div>
+                  <Send size={18} />
+                </div>
+
+                {isCreator ? (
+                  <form className="liveCampaignForm" onSubmit={submitApplication}>
+                    <CampaignSelector campaigns={campaigns} selectedCampaignId={selectedCampaign?.id} onSelect={setSelectedCampaignId} />
+                    <div className="liveFieldGrid">
+                      <label>
+                        Compensation
+                        <select
+                          value={applicationForm.compensation_type}
+                          onChange={(event) =>
+                            setApplicationForm((current) => ({ ...current, compensation_type: event.target.value as CompensationType }))
+                          }
+                        >
+                          {Object.entries(compensationLabels).map(([value, label]) => (
+                            <option key={value} value={value}>{label}</option>
+                          ))}
+                        </select>
+                      </label>
+                      <label>
+                        Proposed fee
+                        <input
+                          min="0"
+                          type="number"
+                          value={applicationForm.proposed_fee}
+                          onChange={(event) => setApplicationForm((current) => ({ ...current, proposed_fee: event.target.value }))}
+                        />
+                      </label>
+                      <label>
+                        Token fee
+                        <input
+                          min="0"
+                          type="number"
+                          value={applicationForm.token_fee_amount}
+                          onChange={(event) => setApplicationForm((current) => ({ ...current, token_fee_amount: event.target.value }))}
+                        />
+                      </label>
+                      <label>
+                        Product value
+                        <input
+                          min="0"
+                          type="number"
+                          value={applicationForm.product_value}
+                          onChange={(event) => setApplicationForm((current) => ({ ...current, product_value: event.target.value }))}
+                        />
+                      </label>
+                    </div>
+                    <input
+                      placeholder="@socialhandle"
+                      value={applicationForm.social_handle}
+                      onChange={(event) => setApplicationForm((current) => ({ ...current, social_handle: event.target.value }))}
+                    />
+                    <input
+                      placeholder="Portfolio or media kit URL"
+                      value={applicationForm.portfolio_url}
+                      onChange={(event) => setApplicationForm((current) => ({ ...current, portfolio_url: event.target.value }))}
+                    />
+                    <textarea
+                      placeholder="Audience fit notes"
+                      value={applicationForm.audience_notes}
+                      onChange={(event) => setApplicationForm((current) => ({ ...current, audience_notes: event.target.value }))}
+                    />
+                    <textarea
+                      placeholder="Why are you a good fit?"
+                      value={applicationForm.pitch}
+                      onChange={(event) => setApplicationForm((current) => ({ ...current, pitch: event.target.value }))}
+                      required
+                    />
+                    <button type="submit" disabled={saving || !selectedCampaign}>
+                      {saving ? <Loader2 className="spin" size={18} /> : <Sparkles size={18} />}
+                      Submit interest
+                    </button>
+                  </form>
+                ) : applications.length === 0 ? (
+                  <div className="emptyState">
+                    <Users size={22} />
+                    <strong>No applications yet</strong>
+                    <p>Share this campaign with creators or test with a creator account.</p>
+                  </div>
+                ) : (
+                  <ApplicationList
+                    applications={applications}
+                    creatorProfiles={creatorProfiles}
+                    onCreateDeal={createDealFromApplication}
+                    onUpdateStatus={updateApplicationStatus}
+                    saving={saving}
+                  />
+                )}
+              </div>
+
+              <CampaignControlPanel
+                campaign={selectedCampaign}
+                campaigns={campaigns}
+                onSelect={(id) => {
+                  setSelectedCampaignId(id);
+                  loadApplications(id);
+                }}
+              />
+            </section>
+          ) : null}
+
+          {activeTab === "deals" ? (
+            <section className="workspacePanel">
+              <div className="panelTitle">
+                <div>
+                  <h2>Deal creation control room</h2>
+                  <p>Convert shortlisted creators into trackable deals with starter terms, deliverables, and approvals.</p>
+                </div>
+                <ShieldCheck size={18} />
+              </div>
+
+              {applications.length === 0 ? (
+                <div className="emptyState">
+                  <ClipboardCheck size={22} />
+                  <strong>No creator applications to convert</strong>
+                  <p>Applications will appear here after creators submit interest.</p>
+                </div>
+              ) : (
+                <div className="dealCreationGrid">
+                  {applications.map((application) => {
+                    const creator = creatorProfiles[application.creator_id];
+                    return (
+                      <article className="dealCreationCard" key={application.id}>
+                        <span className={`statusPill ${application.status}`}>{statusLabels[application.status]}</span>
+                        <h3>{creator?.full_name || "Creator applicant"}</h3>
+                        <p>{application.pitch}</p>
+                        <div className="moneyGrid">
+                          <span><BadgeDollarSign size={15} /> {money(application.proposed_fee)}</span>
+                          <span>{compensationLabels[application.compensation_type]}</span>
+                          <span>{application.social_handle || "Handle pending"}</span>
+                        </div>
+                        <button
+                          className="appleCta compact"
+                          disabled={saving || application.status === "deal_created"}
+                          onClick={() => createDealFromApplication(application)}
+                          type="button"
+                        >
+                          <CheckCircle2 size={17} />
+                          {application.status === "deal_created" ? "Deal created" : "Create deal"}
+                        </button>
+                      </article>
+                    );
+                  })}
+                </div>
+              )}
+            </section>
+          ) : null}
+        </>
+      )}
     </main>
+  );
+}
+
+function CampaignSelector({
+  campaigns,
+  selectedCampaignId,
+  onSelect
+}: {
+  campaigns: LiveCampaign[];
+  selectedCampaignId?: string;
+  onSelect: (id: string) => void;
+}) {
+  return (
+    <label>
+      Campaign
+      <select value={selectedCampaignId || ""} onChange={(event) => onSelect(event.target.value)}>
+        {campaigns.map((campaign) => (
+          <option key={campaign.id} value={campaign.id}>
+            {campaign.name}
+          </option>
+        ))}
+      </select>
+    </label>
+  );
+}
+
+function CampaignList({
+  campaigns,
+  selectedCampaignId,
+  onSelect
+}: {
+  campaigns: LiveCampaign[];
+  selectedCampaignId?: string;
+  onSelect: (id: string) => void;
+}) {
+  if (campaigns.length === 0) {
+    return (
+      <div className="emptyState">
+        <BriefcaseBusiness size={22} />
+        <strong>No open campaigns yet</strong>
+        <p>Open campaigns will appear here for creator applications.</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="dataRows">
+      {campaigns.map((campaign) => (
+        <button
+          className={`campaignSelectRow ${selectedCampaignId === campaign.id ? "active" : ""}`}
+          key={campaign.id}
+          onClick={() => onSelect(campaign.id)}
+          type="button"
+        >
+          <div>
+            <strong>{campaign.name}</strong>
+            <p>{campaign.objective}</p>
+          </div>
+          <span>{money(campaign.campaign_budget, campaign.currency)}</span>
+        </button>
+      ))}
+    </div>
+  );
+}
+
+function CampaignControlPanel({
+  campaign,
+  campaigns,
+  onSelect
+}: {
+  campaign?: LiveCampaign;
+  campaigns: LiveCampaign[];
+  onSelect: (id: string) => void;
+}) {
+  if (!campaign) {
+    return (
+      <div className="workspacePanel">
+        <div className="emptyState">
+          <BriefcaseBusiness size={22} />
+          <strong>No campaign selected</strong>
+          <p>Create or select a campaign to see budget control and creator criteria.</p>
+        </div>
+      </div>
+    );
+  }
+
+  const estimatedCreatorPool = campaign.creator_slots * campaign.creator_max_fee;
+  const budgetRemaining = Math.max(campaign.campaign_budget - estimatedCreatorPool - campaign.token_fee_amount, 0);
+
+  return (
+    <div className="workspacePanel liveControlPanel">
+      <div className="panelTitle">
+        <div>
+          <h2>Campaign controls</h2>
+          <p>Budget, compensation, creator fit, and application rules.</p>
+        </div>
+        <ShieldCheck size={18} />
+      </div>
+
+      <CampaignSelector campaigns={campaigns} selectedCampaignId={campaign.id} onSelect={onSelect} />
+
+      <div className="liveBudgetCards">
+        <div>
+          <span>Total budget</span>
+          <strong>{money(campaign.campaign_budget, campaign.currency)}</strong>
+        </div>
+        <div>
+          <span>Creator fee range</span>
+          <strong>{money(campaign.creator_min_fee, campaign.currency)} - {money(campaign.creator_max_fee, campaign.currency)}</strong>
+        </div>
+        <div>
+          <span>Slots</span>
+          <strong>{campaign.creator_slots}</strong>
+        </div>
+        <div>
+          <span>Buffer</span>
+          <strong>{money(budgetRemaining, campaign.currency)}</strong>
+        </div>
+      </div>
+
+      <div className="liveBudgetBar" aria-label="Budget allocation">
+        <span style={{ width: `${Math.min((estimatedCreatorPool / Math.max(campaign.campaign_budget, 1)) * 100, 100)}%` }} />
+        <span style={{ width: `${Math.min((campaign.token_fee_amount / Math.max(campaign.campaign_budget, 1)) * 100, 100)}%` }} />
+        <span style={{ width: `${Math.min((budgetRemaining / Math.max(campaign.campaign_budget, 1)) * 100, 100)}%` }} />
+      </div>
+
+      <div className="liveCriteriaGrid">
+        <Criteria label="Compensation" value={compensationLabels[campaign.compensation_type]} />
+        <Criteria label="Applications" value={campaign.application_status} />
+        <Criteria label="Niches" value={campaign.target_creator_niches.join(", ") || "Open"} />
+        <Criteria label="Platforms" value={campaign.target_platforms.join(", ") || "Open"} />
+        <Criteria label="Locations" value={campaign.target_locations.join(", ") || "Open"} />
+        <Criteria
+          label="Followers"
+          value={`${campaign.min_followers.toLocaleString()} - ${campaign.max_followers?.toLocaleString() || "open"}`}
+        />
+      </div>
+
+      <div className="trustNote">
+        <CheckCircle2 size={18} />
+        <p>{campaign.creator_requirements || "Creator requirements will appear here."}</p>
+      </div>
+    </div>
+  );
+}
+
+function Criteria({ label, value }: { label: string; value: string }) {
+  return (
+    <div>
+      <span>{label}</span>
+      <strong>{value}</strong>
+    </div>
+  );
+}
+
+function ApplicationList({
+  applications,
+  creatorProfiles,
+  onCreateDeal,
+  onUpdateStatus,
+  saving
+}: {
+  applications: CampaignApplication[];
+  creatorProfiles: Record<string, Profile>;
+  onCreateDeal: (application: CampaignApplication) => void;
+  onUpdateStatus: (application: CampaignApplication, status: ApplicationStatus) => void;
+  saving: boolean;
+}) {
+  return (
+    <div className="applicationQueue">
+      {applications.map((application) => {
+        const creator = creatorProfiles[application.creator_id];
+        return (
+          <article key={application.id}>
+            <div>
+              <span className={`statusPill ${application.status}`}>{statusLabels[application.status]}</span>
+              <h3>{creator?.full_name || "Creator applicant"}</h3>
+              <p>{application.pitch}</p>
+            </div>
+            <div className="liveApplicantMeta">
+              <span>{compensationLabels[application.compensation_type]}</span>
+              <span>{money(application.proposed_fee)}</span>
+              <span>{application.social_handle || "Handle pending"}</span>
+            </div>
+            {application.audience_notes ? <p>{application.audience_notes}</p> : null}
+            <div className="liveActionRow">
+              <button disabled={saving} onClick={() => onUpdateStatus(application, "shortlisted")} type="button">
+                Shortlist
+              </button>
+              <button disabled={saving} onClick={() => onUpdateStatus(application, "rejected")} type="button">
+                Reject
+              </button>
+              <button disabled={saving || application.status === "deal_created"} onClick={() => onCreateDeal(application)} type="button">
+                Create deal
+              </button>
+            </div>
+          </article>
+        );
+      })}
+    </div>
   );
 }

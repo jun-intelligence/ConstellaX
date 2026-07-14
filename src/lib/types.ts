@@ -12,9 +12,10 @@ export type DeliverableStatus =
   | "not_started"
   | "in_progress"
   | "submitted"
+  | "changes_requested"
   | "approved";
 
-export type PaymentStatus = "not_started" | "pending" | "paid" | "failed";
+export type PaymentStatus = "not_started" | "scheduled" | "partial" | "paid" | "overdue" | "failed";
 
 export type Profile = {
   id: string;
