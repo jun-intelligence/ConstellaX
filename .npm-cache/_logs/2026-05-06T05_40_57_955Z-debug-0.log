@@ -1,0 +1,20 @@
+0 verbose cli /usr/local/Cellar/node/25.9.0_3/bin/node /usr/local/bin/npm
+1 info using npm@11.12.1
+2 info using node@v25.9.0
+3 silly config load:file:/usr/local/lib/node_modules/npm/npmrc
+4 silly config load:file:/Users/jackwang/Documents/New project/.npmrc
+5 silly config load:file:/Users/jackwang/.npmrc
+6 silly config load:file:/usr/local/etc/npmrc
+7 verbose title npm install
+8 verbose argv "install" "--cache" ".npm-cache" "--loglevel" "info"
+9 verbose logfile logs-max:10 dir:/Users/jackwang/Documents/New project/.npm-cache/_logs/2026-05-06T05_40_57_955Z-
+10 verbose logfile /Users/jackwang/Documents/New project/.npm-cache/_logs/2026-05-06T05_40_57_955Z-debug-0.log
+11 silly logfile done cleaning log files
+12 silly packumentCache heap:2348810240 maxSize:587202560 maxEntrySize:293601280
+13 http fetch GET https://registry.npmjs.org/npm attempt 1 failed with ENOTFOUND
+14 silly idealTree buildDeps
+15 silly fetch manifest @supabase/supabase-js@^2.45.4
+16 silly packumentCache full:https://registry.npmjs.org/@supabase%2fsupabase-js cache-miss
+17 http fetch GET https://registry.npmjs.org/@supabase%2fsupabase-js attempt 1 failed with ENOTFOUND
+18 http fetch GET https://registry.npmjs.org/npm attempt 2 failed with ENOTFOUND
+19 http fetch GET https://registry.npmjs.org/@supabase%2fsupabase-js attempt 2 failed with ENOTFOUND
