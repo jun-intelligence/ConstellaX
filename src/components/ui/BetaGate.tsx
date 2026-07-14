@@ -2,6 +2,7 @@
 
 import { FormEvent, type ReactNode, useEffect, useState } from "react";
 import { LockKeyhole, ShieldCheck } from "lucide-react";
+import { isSupabaseConfigured } from "@/lib/supabase/client";
 
 const betaPassword = "constellax-beta-2026";
 const storageKey = "constellax-beta-access";
@@ -11,6 +12,10 @@ export function BetaGate({ children }: { children: ReactNode }) {
   const [unlocked, setUnlocked] = useState(false);
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
+
+  if (isSupabaseConfigured) {
+    return <>{children}</>;
+  }
 
   useEffect(() => {
     setUnlocked(window.localStorage.getItem(storageKey) === "granted");

@@ -7,16 +7,16 @@ export default function AuthPage() {
       <section className="authPanel">
         <div>
           <p className="eyebrow">ConstellaX access</p>
-          <h1>Mock authentication</h1>
+          <h1>Secure account access</h1>
           <p className="mutedText">
-            Authentication is intentionally placeholder-only while the product experience is being shaped.
+            Supabase Auth is the account layer for private creator, manager, agency, and brand workspaces.
           </p>
         </div>
 
         <div className="emptyState">
           <ShieldCheck size={22} />
-          <strong>Ready for future Supabase Auth</strong>
-          <p>Use the clean login and signup screens for the investor demo without connecting real accounts yet.</p>
+          <strong>Supabase-ready</strong>
+          <p>Add your Supabase URL and anon key in Vercel to activate real account login on the live site.</p>
         </div>
 
         <div className="authActions">

@@ -4873,3 +4873,44 @@ textarea {
   margin: 0 auto;
   max-width: 360px;
 }
+
+.authGateActions {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  justify-content: center;
+  margin: 30px 0 18px;
+}
+
+.supabaseNotice {
+  align-items: flex-start;
+  background: rgba(47, 111, 94, 0.08);
+  border: 1px solid rgba(47, 111, 94, 0.16);
+  border-radius: 16px;
+  color: #2f6f5e;
+  display: flex;
+  gap: 10px;
+  line-height: 1.5;
+  margin: 22px 0;
+  padding: 14px;
+  text-align: left;
+}
+
+.accountDropdownButton {
+  align-items: center;
+  background: transparent;
+  border: 0;
+  color: inherit;
+  cursor: pointer;
+  display: flex;
+  font: inherit;
+  gap: 8px;
+  padding: 10px 12px;
+  text-align: left;
+  width: 100%;
+}
+
+.accountDropdownButton:hover {
+  background: rgba(15, 15, 15, 0.06);
+}

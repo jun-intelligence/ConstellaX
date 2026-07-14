@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { AppFrame } from "@/components/ui/AppFrame";
 import { BetaGate } from "@/components/ui/BetaGate";
+import { SupabaseAuthGate } from "@/components/ui/SupabaseAuthGate";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -17,7 +18,9 @@ export default function RootLayout({
     <html lang="en">
       <body>
         <BetaGate>
-          <AppFrame>{children}</AppFrame>
+          <SupabaseAuthGate>
+            <AppFrame>{children}</AppFrame>
+          </SupabaseAuthGate>
         </BetaGate>
       </body>
     </html>

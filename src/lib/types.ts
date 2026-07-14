@@ -1,4 +1,4 @@
-export type UserRole = "creator" | "manager" | "brand";
+export type UserRole = "creator" | "manager" | "brand" | "agency";
 
 export type DealStatus =
   | "pending_creator"

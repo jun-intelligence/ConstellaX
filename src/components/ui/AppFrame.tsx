@@ -2,8 +2,9 @@
 
 import Link from "next/link";
 import { useEffect, useState, type ReactNode } from "react";
-import { Bell, Brain, LogOut, Search, Settings, ShieldCheck, UserCircle, WalletCards } from "lucide-react";
+import { Bell, Brain, Search, Settings, ShieldCheck, UserCircle, WalletCards } from "lucide-react";
 import { Sidebar } from "./Sidebar";
+import { SupabaseSignOutButton } from "./SupabaseAuthGate";
 
 const storageKey = "constellax-sidebar-collapsed";
 
@@ -48,7 +49,7 @@ export function AppFrame({ children }: { children: ReactNode }) {
                 <Link href="/settings/workspace"><ShieldCheck size={16} /> Workspace</Link>
                 <Link href="/settings/billing"><WalletCards size={16} /> Billing</Link>
                 <Link href="/settings/security"><Settings size={16} /> Security</Link>
-                <Link href="/login"><LogOut size={16} /> Sign out placeholder</Link>
+                <SupabaseSignOutButton />
               </div>
             </div>
           </nav>
