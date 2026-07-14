@@ -5015,6 +5015,30 @@ textarea {
   transform: none;
 }
 
+.liveCampaignForm .liveSecondaryButton,
+.liveSecondaryButton {
+  align-items: center;
+  background: var(--zen-sage-soft);
+  border: 1px solid rgba(84, 185, 143, 0.28);
+  border-radius: 14px;
+  color: var(--brand-dark);
+  cursor: pointer;
+  display: inline-flex;
+  font: inherit;
+  font-weight: 850;
+  gap: 8px;
+  justify-content: center;
+  min-height: 48px;
+  padding: 0 14px;
+  transition: background 180ms ease, transform 180ms ease;
+}
+
+.liveCampaignForm .liveSecondaryButton:hover,
+.liveSecondaryButton:hover {
+  background: var(--zen-sky-soft);
+  transform: translateY(-1px);
+}
+
 .loadingShell.compact {
   min-height: 180px;
 }

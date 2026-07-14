@@ -85,10 +85,13 @@ create table if not exists public.campaigns (
 );
 
 alter table public.campaigns alter column brand_id drop not null;
+alter table public.campaigns add column if not exists campaign_region text;
 alter table public.campaigns add column if not exists compensation_type public.campaign_compensation_type not null default 'paid';
 alter table public.campaigns add column if not exists creator_min_fee numeric(12, 2) not null default 0 check (creator_min_fee >= 0);
 alter table public.campaigns add column if not exists creator_max_fee numeric(12, 2) not null default 0 check (creator_max_fee >= 0);
 alter table public.campaigns add column if not exists product_value numeric(12, 2) not null default 0 check (product_value >= 0);
+alter table public.campaigns add column if not exists product_value_min numeric(12, 2) not null default 0 check (product_value_min >= 0);
+alter table public.campaigns add column if not exists product_value_max numeric(12, 2) not null default 0 check (product_value_max >= 0);
 alter table public.campaigns add column if not exists token_fee_amount numeric(12, 2) not null default 0 check (token_fee_amount >= 0);
 alter table public.campaigns add column if not exists creator_slots integer not null default 1 check (creator_slots >= 1);
 alter table public.campaigns add column if not exists application_status text not null default 'open';
@@ -143,8 +146,11 @@ create table if not exists public.campaign_applications (
   status public.campaign_application_status not null default 'submitted',
   compensation_type public.campaign_compensation_type not null default 'paid',
   proposed_fee numeric(12, 2) not null default 0 check (proposed_fee >= 0),
+  proposed_fee_min numeric(12, 2) not null default 0 check (proposed_fee_min >= 0),
+  proposed_fee_max numeric(12, 2) not null default 0 check (proposed_fee_max >= 0),
   token_fee_amount numeric(12, 2) not null default 0 check (token_fee_amount >= 0),
   product_value numeric(12, 2) not null default 0 check (product_value >= 0),
+  follower_count integer not null default 0 check (follower_count >= 0),
   pitch text not null,
   social_handle text,
   portfolio_url text,
@@ -153,6 +159,10 @@ create table if not exists public.campaign_applications (
   updated_at timestamptz not null default now(),
   unique (campaign_id, creator_id)
 );
+
+alter table public.campaign_applications add column if not exists proposed_fee_min numeric(12, 2) not null default 0 check (proposed_fee_min >= 0);
+alter table public.campaign_applications add column if not exists proposed_fee_max numeric(12, 2) not null default 0 check (proposed_fee_max >= 0);
+alter table public.campaign_applications add column if not exists follower_count integer not null default 0 check (follower_count >= 0);
 
 create table if not exists public.deliverables (
   id uuid primary key default gen_random_uuid(),

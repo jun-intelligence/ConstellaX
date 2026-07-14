@@ -27,12 +27,15 @@ type LiveCampaign = {
   status: string;
   campaign_budget: number;
   currency: string;
+  campaign_region: string | null;
   start_date: string | null;
   end_date: string | null;
   compensation_type: CompensationType;
   creator_min_fee: number;
   creator_max_fee: number;
   product_value: number;
+  product_value_min: number;
+  product_value_max: number;
   token_fee_amount: number;
   creator_slots: number;
   application_status: string;
@@ -54,8 +57,11 @@ type CampaignApplication = {
   status: ApplicationStatus;
   compensation_type: CompensationType;
   proposed_fee: number;
+  proposed_fee_min: number;
+  proposed_fee_max: number;
   token_fee_amount: number;
   product_value: number;
+  follower_count: number;
   pitch: string;
   social_handle: string | null;
   portfolio_url: string | null;
@@ -67,13 +73,16 @@ const initialCampaignForm = {
   name: "",
   objective: "",
   campaign_budget: "25000",
+  currency: "USD",
+  campaign_region: "Singapore",
   compensation_type: "paid" as CompensationType,
   creator_min_fee: "1000",
   creator_max_fee: "3500",
-  product_value: "0",
+  product_value_min: "150",
+  product_value_max: "500",
   token_fee_amount: "0",
   creator_slots: "5",
-  target_creator_niches: "beauty, lifestyle, wellness",
+  target_creator_niches: "lifestyle, fashion, everyday utility",
   target_platforms: "Instagram, TikTok",
   target_locations: "Singapore, Malaysia",
   min_followers: "10000",
@@ -85,9 +94,11 @@ const initialCampaignForm = {
 
 const initialApplicationForm = {
   compensation_type: "paid" as CompensationType,
-  proposed_fee: "2500",
+  proposed_fee_min: "1000",
+  proposed_fee_max: "2500",
   token_fee_amount: "0",
   product_value: "0",
+  follower_count: "12000",
   social_handle: "",
   portfolio_url: "",
   audience_notes: "Audience is mostly women 24-34 with strong interest in beauty, routine content, and premium lifestyle.",
@@ -120,6 +131,29 @@ function money(value: number | string | null | undefined, currency = "USD") {
   return `${currency} ${Number(value || 0).toLocaleString()}`;
 }
 
+function rangeMoney(min: number | string | null | undefined, max: number | string | null | undefined, currency = "USD") {
+  return `${money(min, currency)} - ${money(max, currency)}`;
+}
+
+function suggestCreatorNiches(name: string, objective: string) {
+  const text = `${name} ${objective}`.toLowerCase();
+  const matches = [
+    { keys: ["crocs", "shoe", "footwear", "sandal"], niches: ["lifestyle", "fashion", "streetwear", "family", "everyday utility"] },
+    { keys: ["beauty", "makeup", "skincare", "serum"], niches: ["beauty", "skincare", "lifestyle", "self-care"] },
+    { keys: ["fitness", "run", "gym", "wellness"], niches: ["fitness", "wellness", "lifestyle", "performance"] },
+    { keys: ["food", "restaurant", "drink", "cafe"], niches: ["food", "lifestyle", "local discovery", "hospitality"] },
+    { keys: ["tech", "app", "software", "ai"], niches: ["technology", "productivity", "business", "creator tools"] }
+  ];
+
+  return matches.find((match) => match.keys.some((key) => text.includes(key)))?.niches || ["lifestyle", "culture", "creator-led storytelling"];
+}
+
+function suggestedCompensationByFollowers(followerCount: number) {
+  if (followerCount < 10000) return "Organic seeding with guaranteed content";
+  if (followerCount <= 30000) return "Token fee range with creator bid";
+  return "Paid fee range with AI-supported negotiation";
+}
+
 export function LiveCampaigns() {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [campaigns, setCampaigns] = useState<LiveCampaign[]>([]);
@@ -128,6 +162,7 @@ export function LiveCampaigns() {
   const [campaignForm, setCampaignForm] = useState(initialCampaignForm);
   const [applicationForm, setApplicationForm] = useState(initialApplicationForm);
   const [selectedCampaignId, setSelectedCampaignId] = useState("");
+  const [editingCampaignId, setEditingCampaignId] = useState("");
   const [activeTab, setActiveTab] = useState<"brief" | "applications" | "deals">("brief");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -217,7 +252,7 @@ export function LiveCampaigns() {
     let query = supabase
       .from("campaigns")
       .select(
-        "id,name,objective,status,campaign_budget,currency,start_date,end_date,compensation_type,creator_min_fee,creator_max_fee,product_value,token_fee_amount,creator_slots,application_status,target_creator_niches,target_platforms,target_locations,min_followers,max_followers,creator_requirements,brand_id,agency_id,created_at"
+        "id,name,objective,status,campaign_budget,currency,campaign_region,start_date,end_date,compensation_type,creator_min_fee,creator_max_fee,product_value,product_value_min,product_value_max,token_fee_amount,creator_slots,application_status,target_creator_niches,target_platforms,target_locations,min_followers,max_followers,creator_requirements,brand_id,agency_id,created_at"
       )
       .order("created_at", { ascending: false });
 
@@ -252,6 +287,33 @@ export function LiveCampaigns() {
     loadCampaigns();
   }, []);
 
+  function beginEditCampaign(campaign: LiveCampaign) {
+    setEditingCampaignId(campaign.id);
+    setActiveTab("brief");
+    setCampaignForm({
+      name: campaign.name,
+      objective: campaign.objective,
+      campaign_budget: String(campaign.campaign_budget || 0),
+      currency: campaign.currency || "USD",
+      campaign_region: campaign.campaign_region || "Singapore",
+      compensation_type: campaign.compensation_type,
+      creator_min_fee: String(campaign.creator_min_fee || 0),
+      creator_max_fee: String(campaign.creator_max_fee || 0),
+      product_value_min: String(campaign.product_value_min ?? campaign.product_value ?? 0),
+      product_value_max: String(campaign.product_value_max ?? campaign.product_value ?? 0),
+      token_fee_amount: String(campaign.token_fee_amount || 0),
+      creator_slots: String(campaign.creator_slots || 1),
+      target_creator_niches: campaign.target_creator_niches.join(", "),
+      target_platforms: campaign.target_platforms.join(", "),
+      target_locations: campaign.target_locations.join(", "),
+      min_followers: String(campaign.min_followers || 0),
+      max_followers: campaign.max_followers ? String(campaign.max_followers) : "",
+      creator_requirements: campaign.creator_requirements || "",
+      start_date: campaign.start_date || "",
+      end_date: campaign.end_date || ""
+    });
+  }
+
   async function createCampaign(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
@@ -265,19 +327,20 @@ export function LiveCampaigns() {
     setSaving(true);
     setMessage("");
 
-    const { data, error } = await supabase
-      .from("campaigns")
-      .insert({
+    const campaignPayload = {
         name: campaignForm.name,
         objective: campaignForm.objective,
         brand_id: profile.role === "brand" ? profile.id : null,
         agency_id: profile.role === "agency" ? profile.id : null,
         campaign_budget: Number(campaignForm.campaign_budget || 0),
-        currency: "USD",
+        currency: campaignForm.currency,
+        campaign_region: campaignForm.campaign_region,
         compensation_type: campaignForm.compensation_type,
         creator_min_fee: Number(campaignForm.creator_min_fee || 0),
         creator_max_fee: Number(campaignForm.creator_max_fee || 0),
-        product_value: Number(campaignForm.product_value || 0),
+        product_value: Number(campaignForm.product_value_max || 0),
+        product_value_min: Number(campaignForm.product_value_min || 0),
+        product_value_max: Number(campaignForm.product_value_max || 0),
         token_fee_amount: Number(campaignForm.token_fee_amount || 0),
         creator_slots: Number(campaignForm.creator_slots || 1),
         target_creator_niches: listFromInput(campaignForm.target_creator_niches),
@@ -290,16 +353,21 @@ export function LiveCampaigns() {
         end_date: campaignForm.end_date || null,
         application_status: "open",
         status: "planning"
-      })
-      .select("id")
-      .single();
+      };
+
+    const request = editingCampaignId
+      ? supabase.from("campaigns").update(campaignPayload).eq("id", editingCampaignId).select("id").single()
+      : supabase.from("campaigns").insert(campaignPayload).select("id").single();
+
+    const { data, error } = await request;
 
     if (error) {
       setMessage(error.message);
     } else {
+      setEditingCampaignId("");
       setCampaignForm(initialCampaignForm);
       await loadCampaigns(data?.id);
-      setMessage("Campaign created. Creators can now submit interest from the creator view.");
+      setMessage(editingCampaignId ? "Campaign controls updated." : "Campaign created. Creators can now submit interest from the creator view.");
     }
 
     setSaving(false);
@@ -321,9 +389,12 @@ export function LiveCampaigns() {
       campaign_id: selectedCampaign.id,
       creator_id: profile.id,
       compensation_type: applicationForm.compensation_type,
-      proposed_fee: Number(applicationForm.proposed_fee || 0),
+      proposed_fee: Number(applicationForm.proposed_fee_max || 0),
+      proposed_fee_min: Number(applicationForm.proposed_fee_min || 0),
+      proposed_fee_max: Number(applicationForm.proposed_fee_max || 0),
       token_fee_amount: Number(applicationForm.token_fee_amount || 0),
       product_value: Number(applicationForm.product_value || 0),
+      follower_count: Number(applicationForm.follower_count || 0),
       pitch: applicationForm.pitch,
       social_handle: applicationForm.social_handle || null,
       portfolio_url: applicationForm.portfolio_url || null,
@@ -367,7 +438,7 @@ export function LiveCampaigns() {
     setSaving(true);
     setMessage("");
 
-    const creatorFee = application.proposed_fee || selectedCampaign.creator_max_fee || 0;
+    const creatorFee = application.proposed_fee_max || application.proposed_fee || selectedCampaign.creator_max_fee || 0;
     const creatorName = creatorProfiles[application.creator_id]?.full_name || "Creator";
 
     const { data: deal, error } = await supabase
@@ -408,7 +479,7 @@ export function LiveCampaigns() {
         { name: "Final delivery", amount: Math.round(creatorFee * 0.3) }
       ],
       net_terms: "Net 30 after final content approval",
-      production_budget: selectedCampaign.product_value,
+      production_budget: selectedCampaign.product_value_max ?? selectedCampaign.product_value,
       usage_rights_fee: 0,
       notes: compensationLabels[application.compensation_type]
     });
@@ -508,13 +579,35 @@ export function LiveCampaigns() {
                     />
                     <div className="liveFieldGrid">
                       <label>
-                        Total budget
+                        Internal total budget
                         <input
                           min="0"
                           type="number"
                           value={campaignForm.campaign_budget}
                           onChange={(event) => setCampaignForm((current) => ({ ...current, campaign_budget: event.target.value }))}
                           required
+                        />
+                      </label>
+                      <label>
+                        Currency
+                        <select
+                          value={campaignForm.currency}
+                          onChange={(event) => setCampaignForm((current) => ({ ...current, currency: event.target.value }))}
+                        >
+                          <option value="USD">USD</option>
+                          <option value="SGD">SGD</option>
+                          <option value="MYR">MYR</option>
+                          <option value="PHP">PHP</option>
+                          <option value="IDR">IDR</option>
+                          <option value="THB">THB</option>
+                        </select>
+                      </label>
+                      <label>
+                        Campaign region
+                        <input
+                          value={campaignForm.campaign_region}
+                          onChange={(event) => setCampaignForm((current) => ({ ...current, campaign_region: event.target.value }))}
+                          placeholder="Singapore"
                         />
                       </label>
                       <label>
@@ -559,12 +652,21 @@ export function LiveCampaigns() {
                         />
                       </label>
                       <label>
-                        Product value
+                        Product value min
                         <input
                           min="0"
                           type="number"
-                          value={campaignForm.product_value}
-                          onChange={(event) => setCampaignForm((current) => ({ ...current, product_value: event.target.value }))}
+                          value={campaignForm.product_value_min}
+                          onChange={(event) => setCampaignForm((current) => ({ ...current, product_value_min: event.target.value }))}
+                        />
+                      </label>
+                      <label>
+                        Product value max
+                        <input
+                          min="0"
+                          type="number"
+                          value={campaignForm.product_value_max}
+                          onChange={(event) => setCampaignForm((current) => ({ ...current, product_value_max: event.target.value }))}
                         />
                       </label>
                       <label>
@@ -579,12 +681,25 @@ export function LiveCampaigns() {
                     </div>
                     <div className="liveFieldGrid">
                       <label>
-                        Creator niches
+                        AI suggested creator niches
                         <input
                           value={campaignForm.target_creator_niches}
                           onChange={(event) => setCampaignForm((current) => ({ ...current, target_creator_niches: event.target.value }))}
                         />
                       </label>
+                      <button
+                        className="liveSecondaryButton"
+                        onClick={() =>
+                          setCampaignForm((current) => ({
+                            ...current,
+                            target_creator_niches: suggestCreatorNiches(current.name, current.objective).join(", ")
+                          }))
+                        }
+                        type="button"
+                      >
+                        <Sparkles size={16} />
+                        Suggest niches
+                      </button>
                       <label>
                         Platforms
                         <input
@@ -643,8 +758,20 @@ export function LiveCampaigns() {
                     </div>
                     <button type="submit" disabled={saving || !profile}>
                       {saving ? <Loader2 className="spin" size={18} /> : <ArrowRight size={18} />}
-                      Create live campaign
+                      {editingCampaignId ? "Save campaign controls" : "Create live campaign"}
                     </button>
+                    {editingCampaignId ? (
+                      <button
+                        className="liveSecondaryButton"
+                        onClick={() => {
+                          setEditingCampaignId("");
+                          setCampaignForm(initialCampaignForm);
+                        }}
+                        type="button"
+                      >
+                        Cancel editing
+                      </button>
+                    ) : null}
                   </form>
                 ) : (
                   <CampaignList campaigns={campaigns} selectedCampaignId={selectedCampaign?.id} onSelect={setSelectedCampaignId} />
@@ -654,10 +781,12 @@ export function LiveCampaigns() {
               <CampaignControlPanel
                 campaign={selectedCampaign}
                 campaigns={campaigns}
+                isCampaignOwner={isCampaignOwner}
                 onSelect={(id) => {
                   setSelectedCampaignId(id);
                   loadApplications(id);
                 }}
+                onEdit={beginEditCampaign}
               />
             </section>
           ) : null}
@@ -691,12 +820,30 @@ export function LiveCampaigns() {
                         </select>
                       </label>
                       <label>
-                        Proposed fee
+                        Follower count
                         <input
                           min="0"
                           type="number"
-                          value={applicationForm.proposed_fee}
-                          onChange={(event) => setApplicationForm((current) => ({ ...current, proposed_fee: event.target.value }))}
+                          value={applicationForm.follower_count}
+                          onChange={(event) => setApplicationForm((current) => ({ ...current, follower_count: event.target.value }))}
+                        />
+                      </label>
+                      <label>
+                        Budget I can work with min
+                        <input
+                          min="0"
+                          type="number"
+                          value={applicationForm.proposed_fee_min}
+                          onChange={(event) => setApplicationForm((current) => ({ ...current, proposed_fee_min: event.target.value }))}
+                        />
+                      </label>
+                      <label>
+                        Budget I can work with max
+                        <input
+                          min="0"
+                          type="number"
+                          value={applicationForm.proposed_fee_max}
+                          onChange={(event) => setApplicationForm((current) => ({ ...current, proposed_fee_max: event.target.value }))}
                         />
                       </label>
                       <label>
@@ -717,6 +864,10 @@ export function LiveCampaigns() {
                           onChange={(event) => setApplicationForm((current) => ({ ...current, product_value: event.target.value }))}
                         />
                       </label>
+                    </div>
+                    <div className="trustNote">
+                      <Sparkles size={18} />
+                      <p>{suggestedCompensationByFollowers(Number(applicationForm.follower_count || 0))}. Brands can review the range and re-negotiate with AI-supported rate intelligence.</p>
                     </div>
                     <input
                       placeholder="@socialhandle"
@@ -764,10 +915,12 @@ export function LiveCampaigns() {
               <CampaignControlPanel
                 campaign={selectedCampaign}
                 campaigns={campaigns}
+                isCampaignOwner={isCampaignOwner}
                 onSelect={(id) => {
                   setSelectedCampaignId(id);
                   loadApplications(id);
                 }}
+                onEdit={beginEditCampaign}
               />
             </section>
           ) : null}
@@ -798,8 +951,9 @@ export function LiveCampaigns() {
                         <h3>{creator?.full_name || "Creator applicant"}</h3>
                         <p>{application.pitch}</p>
                         <div className="moneyGrid">
-                          <span><BadgeDollarSign size={15} /> {money(application.proposed_fee)}</span>
+                          <span><BadgeDollarSign size={15} /> {rangeMoney(application.proposed_fee_min, application.proposed_fee_max)}</span>
                           <span>{compensationLabels[application.compensation_type]}</span>
+                          <span>{Number(application.follower_count || 0).toLocaleString()} followers</span>
                           <span>{application.social_handle || "Handle pending"}</span>
                         </div>
                         <button
@@ -879,7 +1033,7 @@ function CampaignList({
             <strong>{campaign.name}</strong>
             <p>{campaign.objective}</p>
           </div>
-          <span>{money(campaign.campaign_budget, campaign.currency)}</span>
+          <span>{compensationLabels[campaign.compensation_type]}</span>
         </button>
       ))}
     </div>
@@ -889,11 +1043,15 @@ function CampaignList({
 function CampaignControlPanel({
   campaign,
   campaigns,
-  onSelect
+  isCampaignOwner,
+  onSelect,
+  onEdit
 }: {
   campaign?: LiveCampaign;
   campaigns: LiveCampaign[];
+  isCampaignOwner: boolean;
   onSelect: (id: string) => void;
+  onEdit: (campaign: LiveCampaign) => void;
 }) {
   if (!campaign) {
     return (
@@ -914,8 +1072,8 @@ function CampaignControlPanel({
     <div className="workspacePanel liveControlPanel">
       <div className="panelTitle">
         <div>
-          <h2>Campaign controls</h2>
-          <p>Budget, compensation, creator fit, and application rules.</p>
+          <h2>{isCampaignOwner ? "Campaign controls" : "Campaign terms"}</h2>
+          <p>{isCampaignOwner ? "Budget, compensation, creator fit, and application rules." : "Visible creator terms. Internal budget is private."}</p>
         </div>
         <ShieldCheck size={18} />
       </div>
@@ -923,29 +1081,43 @@ function CampaignControlPanel({
       <CampaignSelector campaigns={campaigns} selectedCampaignId={campaign.id} onSelect={onSelect} />
 
       <div className="liveBudgetCards">
-        <div>
-          <span>Total budget</span>
-          <strong>{money(campaign.campaign_budget, campaign.currency)}</strong>
-        </div>
+        {isCampaignOwner ? (
+          <div>
+            <span>Internal total budget</span>
+            <strong>{money(campaign.campaign_budget, campaign.currency)}</strong>
+          </div>
+        ) : null}
         <div>
           <span>Creator fee range</span>
-          <strong>{money(campaign.creator_min_fee, campaign.currency)} - {money(campaign.creator_max_fee, campaign.currency)}</strong>
+          <strong>{rangeMoney(campaign.creator_min_fee, campaign.creator_max_fee, campaign.currency)}</strong>
+        </div>
+        <div>
+          <span>Product value range</span>
+          <strong>{rangeMoney(campaign.product_value_min ?? campaign.product_value, campaign.product_value_max ?? campaign.product_value, campaign.currency)}</strong>
         </div>
         <div>
           <span>Slots</span>
           <strong>{campaign.creator_slots}</strong>
         </div>
+        {isCampaignOwner ? (
+          <div>
+            <span>Buffer</span>
+            <strong>{money(budgetRemaining, campaign.currency)}</strong>
+          </div>
+        ) : null}
         <div>
-          <span>Buffer</span>
-          <strong>{money(budgetRemaining, campaign.currency)}</strong>
+          <span>Region</span>
+          <strong>{campaign.campaign_region || "Regional"}</strong>
         </div>
       </div>
 
-      <div className="liveBudgetBar" aria-label="Budget allocation">
-        <span style={{ width: `${Math.min((estimatedCreatorPool / Math.max(campaign.campaign_budget, 1)) * 100, 100)}%` }} />
-        <span style={{ width: `${Math.min((campaign.token_fee_amount / Math.max(campaign.campaign_budget, 1)) * 100, 100)}%` }} />
-        <span style={{ width: `${Math.min((budgetRemaining / Math.max(campaign.campaign_budget, 1)) * 100, 100)}%` }} />
-      </div>
+      {isCampaignOwner ? (
+        <div className="liveBudgetBar" aria-label="Budget allocation">
+          <span style={{ width: `${Math.min((estimatedCreatorPool / Math.max(campaign.campaign_budget, 1)) * 100, 100)}%` }} />
+          <span style={{ width: `${Math.min((campaign.token_fee_amount / Math.max(campaign.campaign_budget, 1)) * 100, 100)}%` }} />
+          <span style={{ width: `${Math.min((budgetRemaining / Math.max(campaign.campaign_budget, 1)) * 100, 100)}%` }} />
+        </div>
+      ) : null}
 
       <div className="liveCriteriaGrid">
         <Criteria label="Compensation" value={compensationLabels[campaign.compensation_type]} />
@@ -963,6 +1135,17 @@ function CampaignControlPanel({
         <CheckCircle2 size={18} />
         <p>{campaign.creator_requirements || "Creator requirements will appear here."}</p>
       </div>
+
+      {isCampaignOwner ? (
+        <button className="liveSecondaryButton" onClick={() => onEdit(campaign)} type="button">
+          Edit live campaign controls
+        </button>
+      ) : (
+        <div className="trustNote">
+          <ShieldCheck size={18} />
+          <p>Total campaign budget is hidden from creator view. You can submit the fee range you can work with.</p>
+        </div>
+      )}
     </div>
   );
 }
@@ -1002,7 +1185,8 @@ function ApplicationList({
             </div>
             <div className="liveApplicantMeta">
               <span>{compensationLabels[application.compensation_type]}</span>
-              <span>{money(application.proposed_fee)}</span>
+              <span>{rangeMoney(application.proposed_fee_min, application.proposed_fee_max)}</span>
+              <span>{Number(application.follower_count || 0).toLocaleString()} followers</span>
               <span>{application.social_handle || "Handle pending"}</span>
             </div>
             {application.audience_notes ? <p>{application.audience_notes}</p> : null}
