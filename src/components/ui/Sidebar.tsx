@@ -47,6 +47,7 @@ const groups = [
     label: "Operations",
     items: [
       { label: "Campaigns", href: "/campaigns", icon: BriefcaseBusiness, tone: "briefcase" },
+      { label: "Live Campaigns", href: "/campaigns/live", icon: ShieldCheck, tone: "trust" },
       { label: "Analytics", href: "/analytics/creator", icon: LineChart, tone: "analytics" },
       { label: "Trust", href: "/trust", icon: ShieldCheck, tone: "trust" },
       { label: "Contracts", href: "/contracts", icon: FileSignature, tone: "document" },

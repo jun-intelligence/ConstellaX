@@ -58,7 +58,7 @@ create table if not exists public.campaigns (
   id uuid primary key default gen_random_uuid(),
   name text not null,
   objective text not null,
-  brand_id uuid not null references public.users(id) on delete cascade,
+  brand_id uuid references public.users(id) on delete cascade,
   agency_id uuid references public.users(id) on delete set null,
   status text not null default 'planning',
   campaign_budget numeric(12, 2) not null default 0 check (campaign_budget >= 0),
@@ -66,8 +66,11 @@ create table if not exists public.campaigns (
   start_date date,
   end_date date,
   created_at timestamptz not null default now(),
-  updated_at timestamptz not null default now()
+  updated_at timestamptz not null default now(),
+  constraint campaigns_has_owner check (brand_id is not null or agency_id is not null)
 );
+
+alter table public.campaigns alter column brand_id drop not null;
 
 create table if not exists public.deals (
   id uuid primary key default gen_random_uuid(),
