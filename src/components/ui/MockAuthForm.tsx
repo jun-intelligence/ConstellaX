@@ -43,10 +43,12 @@ export function MockAuthForm({
 
     try {
       if (mode === "signup") {
+        const emailRedirectTo = `${window.location.origin}/auth/callback`;
         const { data, error } = await supabase.auth.signUp({
           email,
           password,
           options: {
+            emailRedirectTo,
             data: {
               full_name: fullName,
               company_name: companyName,
@@ -77,7 +79,7 @@ export function MockAuthForm({
 
       if (mode === "forgot") {
         const { error } = await supabase.auth.resetPasswordForEmail(email, {
-          redirectTo: `${window.location.origin}/login`
+          redirectTo: `${window.location.origin}/auth/callback?next=/login`
         });
 
         if (error) throw error;

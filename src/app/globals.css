@@ -4914,3 +4914,11 @@ textarea {
 .accountDropdownButton:hover {
   background: rgba(15, 15, 15, 0.06);
 }
+
+.authCallbackSpinner {
+  align-items: center;
+  color: #2f6f5e;
+  display: flex;
+  justify-content: center;
+  margin-top: 28px;
+}
