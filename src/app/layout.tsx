@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { AppFrame } from "@/components/ui/AppFrame";
+import { BetaGate } from "@/components/ui/BetaGate";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -15,7 +16,9 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body>
-        <AppFrame>{children}</AppFrame>
+        <BetaGate>
+          <AppFrame>{children}</AppFrame>
+        </BetaGate>
       </body>
     </html>
   );
