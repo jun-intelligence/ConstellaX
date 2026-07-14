@@ -23,17 +23,40 @@ export default function AuthCallbackPage() {
       const code = url.searchParams.get("code");
       const next = url.searchParams.get("next") || "/dashboard";
 
-      if (!code) {
-        setHasError(true);
-        setMessage("This confirmation link is missing a Supabase code.");
+      if (code) {
+        const { error } = await supabase.auth.exchangeCodeForSession(code);
+
+        if (error) {
+          setHasError(true);
+          setMessage(error.message);
+          return;
+        }
+
+        setMessage("Account confirmed. Redirecting...");
+        router.replace(next);
         return;
       }
 
-      const { error } = await supabase.auth.exchangeCodeForSession(code);
+      const hashParams = new URLSearchParams(window.location.hash.replace(/^#/, ""));
+      const hashError = hashParams.get("error_description") || hashParams.get("error");
+
+      if (hashError) {
+        setHasError(true);
+        setMessage(hashError);
+        return;
+      }
+
+      const { data, error } = await supabase.auth.getSession();
 
       if (error) {
         setHasError(true);
         setMessage(error.message);
+        return;
+      }
+
+      if (!data.session) {
+        setHasError(true);
+        setMessage("Confirmation opened, but Supabase did not return a session. Try logging in now.");
         return;
       }
 
