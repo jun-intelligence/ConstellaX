@@ -191,6 +191,42 @@ function suggestedCompensationByFollowers(followerCount: number) {
   return "Paid fee range with AI-supported negotiation";
 }
 
+function productionBudgetTotal(application: CampaignApplication) {
+  return (
+    Number(application.photography_budget || 0) +
+    Number(application.videography_budget || 0) +
+    Number(application.hair_makeup_budget || 0) +
+    Number(application.other_fees_budget || 0)
+  );
+}
+
+function rateFitLabel(application: CampaignApplication, campaign?: LiveCampaign) {
+  if (!campaign) return "Review needed";
+  if (application.compensation_type === "organic_seeding") return "Seeding fit";
+  if (application.proposed_fee_max <= campaign.creator_max_fee && application.proposed_fee_min >= campaign.creator_min_fee) {
+    return "Within range";
+  }
+  if (application.proposed_fee_min <= campaign.creator_max_fee) return "Negotiable";
+  return "Above range";
+}
+
+function applicationScore(application: CampaignApplication, campaign?: LiveCampaign) {
+  if (!campaign) return 62;
+  let score = 54;
+  const followers = Number(application.follower_count || 0);
+  const productionTotal = productionBudgetTotal(application);
+
+  if (followers >= campaign.min_followers) score += 14;
+  if (!campaign.max_followers || followers <= campaign.max_followers) score += 8;
+  if (application.compensation_type === "organic_seeding" && followers < 10000) score += 8;
+  if (application.proposed_fee_max <= campaign.creator_max_fee) score += 12;
+  if (productionTotal <= Math.max(campaign.creator_max_fee * 0.35, 500)) score += 6;
+  if (application.pitch.length > 80) score += 6;
+  if (application.audience_notes && application.audience_notes.length > 40) score += 6;
+
+  return Math.min(score, 98);
+}
+
 export function LiveCampaigns() {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [campaigns, setCampaigns] = useState<LiveCampaign[]>([]);
@@ -200,6 +236,7 @@ export function LiveCampaigns() {
   const [applicationForm, setApplicationForm] = useState(initialApplicationForm);
   const [selectedCampaignId, setSelectedCampaignId] = useState("");
   const [editingCampaignId, setEditingCampaignId] = useState("");
+  const [reviewFilter, setReviewFilter] = useState<"all" | "recommended" | "negotiation" | "shortlisted">("all");
   const [activeTab, setActiveTab] = useState<"brief" | "applications" | "deals">("brief");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -212,6 +249,18 @@ export function LiveCampaigns() {
 
   const isCampaignOwner = profile ? ["brand", "agency"].includes(profile.role) : false;
   const isCreator = profile?.role === "creator";
+  const visibleApplications = useMemo(() => {
+    if (reviewFilter === "recommended") {
+      return applications.filter((application) => applicationScore(application, selectedCampaign) >= 80);
+    }
+    if (reviewFilter === "negotiation") {
+      return applications.filter((application) => ["Negotiable", "Above range"].includes(rateFitLabel(application, selectedCampaign)));
+    }
+    if (reviewFilter === "shortlisted") {
+      return applications.filter((application) => application.status === "shortlisted");
+    }
+    return applications;
+  }, [applications, reviewFilter, selectedCampaign]);
 
   async function loadApplications(campaignId: string) {
     if (!supabase || !campaignId) return;
@@ -1052,13 +1101,34 @@ export function LiveCampaigns() {
                     <p>Share this campaign with creators or test with a creator account.</p>
                   </div>
                 ) : (
-                  <ApplicationList
-                    applications={applications}
-                    creatorProfiles={creatorProfiles}
-                    onCreateDeal={createDealFromApplication}
-                    onUpdateStatus={updateApplicationStatus}
-                    saving={saving}
-                  />
+                  <>
+                    <ApplicationReviewSummary applications={applications} campaign={selectedCampaign} />
+                    <div className="reviewFilterBar" aria-label="Application review filters">
+                      {[
+                        { id: "all", label: "All" },
+                        { id: "recommended", label: "Recommended" },
+                        { id: "negotiation", label: "Needs negotiation" },
+                        { id: "shortlisted", label: "Shortlisted" }
+                      ].map((filter) => (
+                        <button
+                          className={reviewFilter === filter.id ? "active" : ""}
+                          key={filter.id}
+                          onClick={() => setReviewFilter(filter.id as "all" | "recommended" | "negotiation" | "shortlisted")}
+                          type="button"
+                        >
+                          {filter.label}
+                        </button>
+                      ))}
+                    </div>
+                    <ApplicationList
+                      applications={visibleApplications}
+                      campaign={selectedCampaign}
+                      creatorProfiles={creatorProfiles}
+                      onCreateDeal={createDealFromApplication}
+                      onUpdateStatus={updateApplicationStatus}
+                      saving={saving}
+                    />
+                  </>
                 )}
               </div>
 
@@ -1334,41 +1404,122 @@ function Criteria({ label, value }: { label: string; value: string }) {
   );
 }
 
+function ApplicationReviewSummary({
+  applications,
+  campaign
+}: {
+  applications: CampaignApplication[];
+  campaign?: LiveCampaign;
+}) {
+  const recommended = applications.filter((application) => applicationScore(application, campaign) >= 80).length;
+  const negotiation = applications.filter((application) => ["Negotiable", "Above range"].includes(rateFitLabel(application, campaign))).length;
+  const shortlisted = applications.filter((application) => application.status === "shortlisted").length;
+  const estimatedCommitment = applications.reduce((sum, application) => sum + Number(application.proposed_fee_max || 0), 0);
+
+  return (
+    <div className="applicationReviewSummary">
+      <div>
+        <span>Total applications</span>
+        <strong>{applications.length}</strong>
+      </div>
+      <div>
+        <span>Recommended</span>
+        <strong>{recommended}</strong>
+      </div>
+      <div>
+        <span>Needs negotiation</span>
+        <strong>{negotiation}</strong>
+      </div>
+      <div>
+        <span>Shortlisted</span>
+        <strong>{shortlisted}</strong>
+      </div>
+      <div>
+        <span>Max requested fees</span>
+        <strong>{money(estimatedCommitment, campaign?.currency || "USD")}</strong>
+      </div>
+      <div>
+        <span>Budget guardrail</span>
+        <strong>{campaign ? money(campaign.creator_slots * campaign.creator_max_fee, campaign.currency) : "Pending"}</strong>
+      </div>
+    </div>
+  );
+}
+
 function ApplicationList({
   applications,
+  campaign,
   creatorProfiles,
   onCreateDeal,
   onUpdateStatus,
   saving
 }: {
   applications: CampaignApplication[];
+  campaign?: LiveCampaign;
   creatorProfiles: Record<string, Profile>;
   onCreateDeal: (application: CampaignApplication) => void;
   onUpdateStatus: (application: CampaignApplication, status: ApplicationStatus) => void;
   saving: boolean;
 }) {
+  if (applications.length === 0) {
+    return (
+      <div className="emptyState">
+        <Users size={22} />
+        <strong>No applications match this filter</strong>
+        <p>Try another review view or wait for more creator submissions.</p>
+      </div>
+    );
+  }
+
   return (
     <div className="applicationQueue">
       {applications.map((application) => {
         const creator = creatorProfiles[application.creator_id];
+        const score = applicationScore(application, campaign);
+        const rateFit = rateFitLabel(application, campaign);
+        const productionTotal = productionBudgetTotal(application);
         return (
           <article key={application.id}>
-            <div>
-              <span className={`statusPill ${application.status}`}>{statusLabels[application.status]}</span>
-              <h3>{creator?.full_name || "Creator applicant"}</h3>
-              <p>{application.pitch}</p>
+            <div className="applicationCardHeader">
+              <div>
+                <span className={`statusPill ${application.status}`}>{statusLabels[application.status]}</span>
+                <h3>{creator?.full_name || "Creator applicant"}</h3>
+              </div>
+              <div className="reviewScore">
+                <span>Fit score</span>
+                <strong>{score}</strong>
+              </div>
+            </div>
+            <p>{application.pitch}</p>
+            <div className="reviewSignalGrid">
+              <div>
+                <span>Rate fit</span>
+                <strong>{rateFit}</strong>
+              </div>
+              <div>
+                <span>Requested range</span>
+                <strong>{rangeMoney(application.proposed_fee_min, application.proposed_fee_max, campaign?.currency || "USD")}</strong>
+              </div>
+              <div>
+                <span>Production support</span>
+                <strong>{money(productionTotal, campaign?.currency || "USD")}</strong>
+              </div>
+              <div>
+                <span>Creator tier</span>
+                <strong>{suggestedCompensationByFollowers(Number(application.follower_count || 0))}</strong>
+              </div>
             </div>
             <div className="liveApplicantMeta">
               <span>{compensationLabels[application.compensation_type]}</span>
-              <span>{rangeMoney(application.proposed_fee_min, application.proposed_fee_max)}</span>
+              <span>{rangeMoney(application.proposed_fee_min, application.proposed_fee_max, campaign?.currency || "USD")}</span>
               <span>{Number(application.follower_count || 0).toLocaleString()} followers</span>
               <span>{application.social_handle || "Handle pending"}</span>
             </div>
             <div className="liveApplicantMeta">
-              <span>Photo {money(application.photography_budget)}</span>
-              <span>Video {money(application.videography_budget)}</span>
-              <span>H&MU {money(application.hair_makeup_budget)}</span>
-              <span>Other {money(application.other_fees_budget)}</span>
+              <span>Photo {money(application.photography_budget, campaign?.currency || "USD")}</span>
+              <span>Video {money(application.videography_budget, campaign?.currency || "USD")}</span>
+              <span>H&MU {money(application.hair_makeup_budget, campaign?.currency || "USD")}</span>
+              <span>Other {money(application.other_fees_budget, campaign?.currency || "USD")}</span>
             </div>
             {application.budget_notes ? <p>{application.budget_notes}</p> : null}
             {application.audience_notes ? <p>{application.audience_notes}</p> : null}

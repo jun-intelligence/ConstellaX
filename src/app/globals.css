@@ -1039,7 +1039,7 @@ a {
 }
 
 .darkSignal {
-  align-items: start;
+  align-items: flex-start;
   background: #f5f5f7;
   border-radius: 24px;
   color: #08080a;
@@ -2726,7 +2726,7 @@ textarea {
 }
 
 .aiNotification {
-  align-items: start;
+  align-items: flex-start;
   display: grid;
   gap: 16px;
   grid-template-columns: auto 1fr;
@@ -3463,7 +3463,7 @@ textarea {
 }
 
 .reportNarrative {
-  align-items: start;
+  align-items: flex-start;
   background: #fff;
   border: 1px solid rgba(0, 0, 0, 0.06);
   border-radius: 18px;
@@ -3668,7 +3668,7 @@ textarea {
 }
 
 .workspaceHeader.compact {
-  align-items: start;
+  align-items: flex-start;
 }
 
 .workspaceHeader h1 {
@@ -4067,7 +4067,7 @@ textarea {
 }
 
 .agencyPosition {
-  align-items: start;
+  align-items: flex-start;
   border-top: 1px solid var(--line);
   color: var(--muted);
   display: flex;
@@ -4356,6 +4356,8 @@ textarea {
   .liveBudgetCards,
   .liveCriteriaGrid,
   .liveTimeline,
+  .applicationReviewSummary,
+  .reviewSignalGrid,
   .paymentTermsGrid,
   .trustPillarGrid,
   .trustWorkflowGrid,
@@ -4464,6 +4466,8 @@ textarea {
   .stats,
   .dealCreationGrid,
   .livePrincipleStrip,
+  .applicationReviewSummary,
+  .reviewSignalGrid,
   .dealForm,
   .paymentForm,
   .brandHero,
@@ -4679,7 +4683,7 @@ textarea {
   }
 
   .aiHero {
-    align-items: start;
+    align-items: flex-start;
     padding-top: 48px;
   }
 
@@ -4697,7 +4701,7 @@ textarea {
   }
 
   .osRankList article {
-    align-items: start;
+    align-items: flex-start;
     grid-template-columns: auto 1fr;
   }
 
@@ -5182,7 +5186,7 @@ textarea {
 }
 
 .liveCampaignSuite {
-  align-items: start;
+  align-items: flex-start;
 }
 
 .liveCampaignPage .workspacePanel {
@@ -5262,6 +5266,8 @@ textarea {
 .liveBudgetCards,
 .liveCriteriaGrid,
 .liveTimeline,
+.applicationReviewSummary,
+.reviewSignalGrid,
 .dealCreationGrid {
   display: grid;
   gap: 12px;
@@ -5271,6 +5277,8 @@ textarea {
 .liveBudgetCards div,
 .liveCriteriaGrid div,
 .liveTimeline div,
+.applicationReviewSummary div,
+.reviewSignalGrid div,
 .dealCreationCard,
 .applicationQueue article {
   background: var(--live-surface, #f8faf8);
@@ -5283,7 +5291,10 @@ textarea {
 
 .liveBudgetCards span,
 .liveCriteriaGrid span,
-.liveTimeline span {
+.liveTimeline span,
+.applicationReviewSummary span,
+.reviewSignalGrid span,
+.reviewScore span {
   color: var(--live-muted, var(--muted));
   font-size: 12px;
   font-weight: 900;
@@ -5303,6 +5314,81 @@ textarea {
 .liveTimeline strong {
   color: var(--ink);
   font-size: 15px;
+}
+
+.applicationReviewSummary {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.applicationReviewSummary strong {
+  color: var(--live-ink);
+  font-size: clamp(22px, 3vw, 34px);
+  letter-spacing: -0.02em;
+}
+
+.reviewFilterBar {
+  background: rgba(255, 252, 247, 0.7);
+  border: 1px solid rgba(36, 31, 28, 0.08);
+  border-radius: 20px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 8px;
+}
+
+.reviewFilterBar button {
+  background: transparent;
+  border: 0;
+  border-radius: 14px;
+  color: var(--live-muted);
+  cursor: pointer;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 850;
+  min-height: 38px;
+  padding: 0 12px;
+  transition: background 180ms ease, color 180ms ease, transform 180ms ease;
+}
+
+.reviewFilterBar button:hover,
+.reviewFilterBar button.active {
+  background: var(--live-ink);
+  color: #fff;
+  transform: translateY(-1px);
+}
+
+.applicationCardHeader {
+  align-items: flex-start;
+  display: flex;
+  gap: 16px;
+  justify-content: space-between;
+}
+
+.reviewScore {
+  align-items: center;
+  background: #fff6ec;
+  border: 1px solid rgba(184, 101, 75, 0.18);
+  border-radius: 18px;
+  color: var(--live-clay-dark);
+  display: grid;
+  gap: 2px;
+  min-width: 92px;
+  padding: 12px;
+  text-align: center;
+}
+
+.reviewScore strong {
+  font-size: 30px;
+  line-height: 1;
+}
+
+.reviewSignalGrid {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.reviewSignalGrid strong {
+  color: var(--live-ink);
+  line-height: 1.35;
 }
 
 .liveBudgetBar {
