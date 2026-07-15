@@ -20,8 +20,23 @@ import {
   Sparkles,
   Users
 } from "lucide-react";
+import type { LucideIcon } from "lucide-react";
+import type { UserRole } from "@/lib/types";
+import { useUserProfile } from "./useUserProfile";
 
-const groups = [
+const roleDashboardItems: Record<UserRole, {
+  label: string;
+  href: string;
+  icon: LucideIcon;
+  tone: string;
+}> = {
+  creator: { label: "Creator", href: "/dashboard/creator", icon: Users, tone: "people" },
+  manager: { label: "Manager", href: "/dashboard/manager", icon: LayoutDashboard, tone: "grid" },
+  brand: { label: "Brand", href: "/dashboard/brand", icon: BriefcaseBusiness, tone: "briefcase" },
+  agency: { label: "Agency", href: "/dashboard/agency", icon: BriefcaseBusiness, tone: "briefcase" }
+};
+
+const baseGroups = [
   {
     label: "System",
     items: [
@@ -36,10 +51,6 @@ const groups = [
   {
     label: "Dashboards",
     items: [
-      { label: "Creator", href: "/dashboard/creator", icon: Users, tone: "people" },
-      { label: "Manager", href: "/dashboard/manager", icon: LayoutDashboard, tone: "grid" },
-      { label: "Brand", href: "/dashboard/brand", icon: BriefcaseBusiness, tone: "briefcase" },
-      { label: "Agency", href: "/dashboard/agency", icon: BriefcaseBusiness, tone: "briefcase" },
       { label: "AI Manager", href: "/dashboard/ai-manager", icon: Brain, tone: "brain" }
     ]
   },
@@ -66,6 +77,14 @@ export function Sidebar({
   onToggle: () => void;
 }) {
   const pathname = usePathname();
+  const { profile } = useUserProfile();
+  const groups = baseGroups.map((group) => {
+    if (group.label !== "Dashboards") return group;
+    return {
+      ...group,
+      items: profile ? [roleDashboardItems[profile.role], ...group.items] : group.items
+    };
+  });
 
   return (
     <aside className={`globalSidebar ${collapsed ? "collapsed" : ""}`} aria-label="Main navigation">

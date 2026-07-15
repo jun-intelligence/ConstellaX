@@ -4916,6 +4916,28 @@ textarea {
   margin: 30px 0 18px;
 }
 
+.roleLockedPanel {
+  align-items: center;
+  margin: 0 auto;
+  max-width: 760px;
+  padding: clamp(28px, 6vw, 52px);
+  text-align: center;
+}
+
+.roleLockedPanel h1 {
+  font-size: clamp(38px, 7vw, 68px);
+  letter-spacing: -0.03em;
+  line-height: 0.98;
+  margin: 10px 0 18px;
+}
+
+.roleLockedPanel p:not(.eyebrow) {
+  color: var(--muted);
+  line-height: 1.6;
+  margin: 0 auto;
+  max-width: 560px;
+}
+
 .supabaseNotice {
   align-items: flex-start;
   background: rgba(47, 111, 94, 0.08);

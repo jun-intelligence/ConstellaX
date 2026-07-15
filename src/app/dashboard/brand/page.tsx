@@ -1,5 +1,10 @@
 import { RoleDashboard } from "@/components/product/RoleDashboard";
+import { RoleAccessGuard } from "@/components/ui/RoleAccessGuard";
 
 export default function BrandDashboardPage() {
-  return <RoleDashboard role="brand" />;
+  return (
+    <RoleAccessGuard allowedRole="brand">
+      <RoleDashboard role="brand" />
+    </RoleAccessGuard>
+  );
 }

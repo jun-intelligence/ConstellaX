@@ -10,6 +10,7 @@ import {
   Users
 } from "lucide-react";
 import { campaigns, formatMoney } from "@/lib/mockProduct";
+import { RoleAccessGuard } from "@/components/ui/RoleAccessGuard";
 
 const activeCampaigns = campaigns.filter((campaign) => campaign.status !== "reporting");
 const totalBudget = campaigns.reduce((sum, campaign) => sum + campaign.budget, 0);
@@ -38,7 +39,8 @@ const deals = campaigns.flatMap((campaign) => campaign.deals.map((deal) => ({ ..
 
 export default function AgencyDashboardPage() {
   return (
-    <main className="workspacePage">
+    <RoleAccessGuard allowedRole="agency">
+      <main className="workspacePage">
       <header className="workspaceHeader">
         <div>
           <p className="eyebrow">Agency command center</p>
@@ -165,6 +167,7 @@ export default function AgencyDashboardPage() {
           ))}
         </div>
       </section>
-    </main>
+      </main>
+    </RoleAccessGuard>
   );
 }

@@ -1,5 +1,10 @@
 import { RoleDashboard } from "@/components/product/RoleDashboard";
+import { RoleAccessGuard } from "@/components/ui/RoleAccessGuard";
 
 export default function CreatorDashboardPage() {
-  return <RoleDashboard role="creator" />;
+  return (
+    <RoleAccessGuard allowedRole="creator">
+      <RoleDashboard role="creator" />
+    </RoleAccessGuard>
+  );
 }
