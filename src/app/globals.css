@@ -272,6 +272,11 @@ a {
   color: var(--icon-pink);
 }
 
+.topIconLink.dashboard {
+  color: var(--icon-brown);
+  font-weight: 850;
+}
+
 .accountMenu {
   position: relative;
 }
