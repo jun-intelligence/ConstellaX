@@ -558,7 +558,7 @@ export function LiveCampaigns() {
   }
 
   return (
-    <main className="workspacePage">
+    <main className="workspacePage liveCampaignPage">
       <header className="workspaceHeader compact">
         <div>
           <p className="eyebrow">Live campaign operating workflow</p>
@@ -567,11 +567,34 @@ export function LiveCampaigns() {
             Structure the brief, control compensation, receive creator interest, shortlist applicants, and convert approved
             creators into live deals.
           </p>
+          <div className="liveHeroMeta" aria-label="Workflow principles">
+            <span>Human-approved</span>
+            <span>Budget transparent</span>
+            <span>Creator-safe</span>
+          </div>
         </div>
         <span className="statusPill active">Supabase connected</span>
       </header>
 
       {message ? <p className="formMessage">{message}</p> : null}
+
+      <section className="livePrincipleStrip" aria-label="Live campaign principles">
+        <article>
+          <span>01</span>
+          <strong>Brief with care</strong>
+          <p>Campaign controls stay structured so brands can launch without losing operational clarity.</p>
+        </article>
+        <article>
+          <span>02</span>
+          <strong>Invite creator context</strong>
+          <p>Applications capture fit, rate, production needs, and usage boundaries before negotiation.</p>
+        </article>
+        <article>
+          <span>03</span>
+          <strong>Convert with records</strong>
+          <p>Approved creators become trackable deals with terms, timelines, and payment visibility.</p>
+        </article>
+      </section>
 
       <section className="liveWorkflowTabs" aria-label="Campaign workflow">
         {[

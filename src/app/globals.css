@@ -4352,6 +4352,7 @@ textarea {
 
   .appleCardGrid,
   .dealCreationGrid,
+  .livePrincipleStrip,
   .liveBudgetCards,
   .liveCriteriaGrid,
   .liveTimeline,
@@ -4462,6 +4463,7 @@ textarea {
 
   .stats,
   .dealCreationGrid,
+  .livePrincipleStrip,
   .dealForm,
   .paymentForm,
   .brandHero,
@@ -4950,6 +4952,91 @@ textarea {
   margin-top: 28px;
 }
 
+.liveCampaignPage {
+  --live-ink: #241f1c;
+  --live-muted: #746c63;
+  --live-line: #e7ded2;
+  --live-surface: rgba(255, 252, 247, 0.88);
+  --live-soft: #fbf6ef;
+  --live-clay: #b8654b;
+  --live-clay-dark: #8f432e;
+  --live-sage: #6f8f7a;
+  --live-sage-soft: #edf5ed;
+  background:
+    radial-gradient(circle at 16% 0%, rgba(184, 101, 75, 0.11), transparent 28%),
+    radial-gradient(circle at 90% 12%, rgba(111, 143, 122, 0.12), transparent 28%),
+    linear-gradient(180deg, #fbf7f0 0%, #f7f4ee 46%, #f6f8f4 100%);
+  color: var(--live-ink);
+}
+
+.liveCampaignPage .workspaceHeader {
+  background: rgba(255, 252, 247, 0.68);
+  border: 1px solid rgba(184, 101, 75, 0.12);
+  border-radius: 30px;
+  box-shadow: 0 28px 80px rgba(78, 52, 34, 0.08);
+  padding: clamp(24px, 4vw, 42px);
+}
+
+.liveCampaignPage .workspaceHeader h1 {
+  color: var(--live-ink);
+  letter-spacing: -0.02em;
+}
+
+.liveCampaignPage .workspaceHeader p {
+  color: var(--live-muted);
+  max-width: 760px;
+}
+
+.liveHeroMeta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 18px;
+}
+
+.liveHeroMeta span {
+  background: #fffaf4;
+  border: 1px solid var(--live-line);
+  border-radius: 999px;
+  color: var(--live-clay-dark);
+  font-size: 13px;
+  font-weight: 850;
+  padding: 8px 12px;
+}
+
+.livePrincipleStrip {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.livePrincipleStrip article {
+  background: rgba(255, 252, 247, 0.76);
+  border: 1px solid rgba(36, 31, 28, 0.08);
+  border-radius: 24px;
+  box-shadow: 0 18px 50px rgba(78, 52, 34, 0.055);
+  display: grid;
+  gap: 8px;
+  padding: 18px;
+}
+
+.livePrincipleStrip span {
+  color: var(--live-clay);
+  font-size: 12px;
+  font-weight: 950;
+  letter-spacing: 0.08em;
+}
+
+.livePrincipleStrip strong {
+  color: var(--live-ink);
+}
+
+.livePrincipleStrip p {
+  color: var(--live-muted);
+  line-height: 1.5;
+  margin: 0;
+}
+
 .liveCampaignForm {
   display: grid;
   gap: 14px;
@@ -4959,13 +5046,24 @@ textarea {
 .liveCampaignForm textarea,
 .liveCampaignForm select,
 .liveControlPanel select {
-  background: #fff;
-  border: 1px solid rgba(22, 22, 22, 0.1);
-  border-radius: 14px;
-  color: #161616;
+  background: rgba(255, 253, 250, 0.96);
+  border: 1px solid rgba(36, 31, 28, 0.1);
+  border-radius: 16px;
+  color: var(--live-ink, #161616);
   font: inherit;
   padding: 14px 16px;
+  transition: border-color 180ms ease, box-shadow 180ms ease, background 180ms ease;
   width: 100%;
+}
+
+.liveCampaignForm input:focus,
+.liveCampaignForm textarea:focus,
+.liveCampaignForm select:focus,
+.liveControlPanel select:focus {
+  background: #fff;
+  border-color: rgba(184, 101, 75, 0.46);
+  box-shadow: 0 0 0 4px rgba(184, 101, 75, 0.09);
+  outline: 0;
 }
 
 .liveCampaignForm textarea {
@@ -4991,9 +5089,9 @@ textarea {
 
 .liveCampaignForm button {
   align-items: center;
-  background: #151515;
+  background: var(--live-ink, #151515);
   border: 0;
-  border-radius: 14px;
+  border-radius: 16px;
   color: #fff;
   cursor: pointer;
   display: inline-flex;
@@ -5006,7 +5104,7 @@ textarea {
 }
 
 .liveCampaignForm button:hover {
-  background: #2f6f5e;
+  background: var(--live-clay-dark, #2f6f5e);
   transform: translateY(-1px);
 }
 
@@ -5019,10 +5117,10 @@ textarea {
 .liveCampaignForm .liveSecondaryButton,
 .liveSecondaryButton {
   align-items: center;
-  background: var(--zen-sage-soft);
-  border: 1px solid rgba(84, 185, 143, 0.28);
-  border-radius: 14px;
-  color: var(--brand-dark);
+  background: var(--live-sage-soft, var(--zen-sage-soft));
+  border: 1px solid rgba(111, 143, 122, 0.28);
+  border-radius: 16px;
+  color: #405f4b;
   cursor: pointer;
   display: inline-flex;
   font: inherit;
@@ -5036,7 +5134,8 @@ textarea {
 
 .liveCampaignForm .liveSecondaryButton:hover,
 .liveSecondaryButton:hover {
-  background: var(--zen-sky-soft);
+  background: #fff6ec;
+  color: var(--live-clay-dark, var(--brand-dark));
   transform: translateY(-1px);
 }
 
@@ -5045,9 +5144,10 @@ textarea {
 }
 
 .liveWorkflowTabs {
-  background: rgba(255, 255, 255, 0.72);
-  border: 1px solid rgba(0, 0, 0, 0.06);
-  border-radius: 22px;
+  background: rgba(255, 252, 247, 0.82);
+  border: 1px solid rgba(36, 31, 28, 0.08);
+  border-radius: 24px;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.7);
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
@@ -5058,8 +5158,8 @@ textarea {
   align-items: center;
   background: transparent;
   border: 0;
-  border-radius: 16px;
-  color: #68726e;
+  border-radius: 18px;
+  color: var(--live-muted, #68726e);
   cursor: pointer;
   display: inline-flex;
   font: inherit;
@@ -5071,18 +5171,39 @@ textarea {
 }
 
 .liveWorkflowTabs button:hover {
-  background: var(--zen-sage-soft);
-  color: var(--brand-dark);
+  background: #fff6ec;
+  color: var(--live-clay-dark, var(--brand-dark));
   transform: translateY(-1px);
 }
 
 .liveWorkflowTabs button.active {
-  background: #111;
+  background: var(--live-ink, #111);
   color: #fff;
 }
 
 .liveCampaignSuite {
   align-items: start;
+}
+
+.liveCampaignPage .workspacePanel {
+  background: rgba(255, 252, 247, 0.82);
+  border: 1px solid rgba(36, 31, 28, 0.08);
+  border-radius: 28px;
+  box-shadow: 0 22px 70px rgba(78, 52, 34, 0.065);
+}
+
+.liveCampaignPage .panelTitle {
+  border-bottom: 1px solid rgba(36, 31, 28, 0.08);
+  padding-bottom: 14px;
+}
+
+.liveCampaignPage .panelTitle h2 {
+  color: var(--live-ink);
+  letter-spacing: -0.01em;
+}
+
+.liveCampaignPage .panelTitle p {
+  color: var(--live-muted);
 }
 
 .liveFieldGrid {
@@ -5093,7 +5214,7 @@ textarea {
 
 .liveFieldGrid label,
 .liveControlPanel label {
-  color: #77736b;
+  color: var(--live-muted, #77736b);
   display: grid;
   font-size: 0.78rem;
   font-weight: 750;
@@ -5104,9 +5225,9 @@ textarea {
 
 .campaignSelectRow {
   align-items: center;
-  background: #f8faf8;
-  border: 1px solid var(--line);
-  border-radius: 18px;
+  background: var(--live-surface, #f8faf8);
+  border: 1px solid var(--live-line, var(--line));
+  border-radius: 20px;
   color: inherit;
   cursor: pointer;
   display: grid;
@@ -5119,8 +5240,8 @@ textarea {
 
 .campaignSelectRow:hover,
 .campaignSelectRow.active {
-  background: var(--zen-sky-soft);
-  border-color: rgba(90, 174, 232, 0.42);
+  background: #fff6ec;
+  border-color: rgba(184, 101, 75, 0.32);
   transform: translateY(-1px);
 }
 
@@ -5152,9 +5273,9 @@ textarea {
 .liveTimeline div,
 .dealCreationCard,
 .applicationQueue article {
-  background: #f8faf8;
-  border: 1px solid var(--line);
-  border-radius: 18px;
+  background: var(--live-surface, #f8faf8);
+  border: 1px solid var(--live-line, var(--line));
+  border-radius: 20px;
   display: grid;
   gap: 8px;
   padding: 16px;
@@ -5163,7 +5284,7 @@ textarea {
 .liveBudgetCards span,
 .liveCriteriaGrid span,
 .liveTimeline span {
-  color: var(--muted);
+  color: var(--live-muted, var(--muted));
   font-size: 12px;
   font-weight: 900;
   letter-spacing: 0.08em;
@@ -5185,7 +5306,7 @@ textarea {
 }
 
 .liveBudgetBar {
-  background: #eef2ef;
+  background: #efe6dc;
   border-radius: 999px;
   display: flex;
   height: 16px;
@@ -5193,23 +5314,23 @@ textarea {
 }
 
 .liveBudgetBar span:nth-child(1) {
-  background: var(--zen-sage);
+  background: var(--live-sage, var(--zen-sage));
 }
 
 .liveBudgetBar span:nth-child(2) {
-  background: var(--zen-amber);
+  background: #d6a85f;
 }
 
 .liveBudgetBar span:nth-child(3) {
-  background: var(--zen-sky);
+  background: var(--live-clay, var(--zen-sky));
 }
 
 .trustNote {
   align-items: flex-start;
-  background: var(--zen-sage-soft);
-  border: 1px solid rgba(84, 185, 143, 0.28);
-  border-radius: 18px;
-  color: var(--brand-dark);
+  background: var(--live-sage-soft, var(--zen-sage-soft));
+  border: 1px solid rgba(111, 143, 122, 0.25);
+  border-radius: 20px;
+  color: #405f4b;
   display: flex;
   gap: 10px;
   padding: 16px;
@@ -5221,9 +5342,9 @@ textarea {
 }
 
 .liveBudgetPlanner {
-  background: #f8faf8;
-  border: 1px solid var(--line);
-  border-radius: 20px;
+  background: var(--live-soft, #f8faf8);
+  border: 1px solid var(--live-line, var(--line));
+  border-radius: 22px;
   display: grid;
   gap: 14px;
   padding: 16px;
@@ -5235,7 +5356,7 @@ textarea {
 }
 
 .liveBudgetPlanner p {
-  color: var(--muted);
+  color: var(--live-muted, var(--muted));
   line-height: 1.5;
 }
 
@@ -5251,7 +5372,7 @@ textarea {
 
 .applicationQueue p,
 .dealCreationCard p {
-  color: var(--muted);
+  color: var(--live-muted, var(--muted));
   line-height: 1.5;
   margin: 0;
 }
@@ -5264,8 +5385,8 @@ textarea {
 }
 
 .liveApplicantMeta span {
-  background: #fff;
-  border: 1px solid rgba(0, 0, 0, 0.06);
+  background: #fffaf4;
+  border: 1px solid rgba(36, 31, 28, 0.07);
   border-radius: 999px;
   color: #53605b;
   font-size: 13px;
@@ -5276,7 +5397,7 @@ textarea {
 .liveActionRow button,
 .dealCreationCard button {
   align-items: center;
-  background: #111;
+  background: var(--live-ink, #111);
   border: 0;
   border-radius: 14px;
   color: #fff;
@@ -5291,16 +5412,16 @@ textarea {
 }
 
 .liveActionRow button:nth-child(1) {
-  background: var(--brand);
+  background: var(--live-sage, var(--brand));
 }
 
 .liveActionRow button:nth-child(2) {
-  background: #7b4f42;
+  background: #8f6a55;
 }
 
 .liveActionRow button:hover,
 .dealCreationCard button:hover {
-  background: var(--brand-dark);
+  background: var(--live-clay-dark, var(--brand-dark));
   transform: translateY(-1px);
 }
 
