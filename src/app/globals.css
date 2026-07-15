@@ -4354,6 +4354,7 @@ textarea {
   .dealCreationGrid,
   .liveBudgetCards,
   .liveCriteriaGrid,
+  .liveTimeline,
   .paymentTermsGrid,
   .trustPillarGrid,
   .trustWorkflowGrid,
@@ -5139,6 +5140,7 @@ textarea {
 
 .liveBudgetCards,
 .liveCriteriaGrid,
+.liveTimeline,
 .dealCreationGrid {
   display: grid;
   gap: 12px;
@@ -5147,6 +5149,7 @@ textarea {
 
 .liveBudgetCards div,
 .liveCriteriaGrid div,
+.liveTimeline div,
 .dealCreationCard,
 .applicationQueue article {
   background: #f8faf8;
@@ -5158,7 +5161,8 @@ textarea {
 }
 
 .liveBudgetCards span,
-.liveCriteriaGrid span {
+.liveCriteriaGrid span,
+.liveTimeline span {
   color: var(--muted);
   font-size: 12px;
   font-weight: 900;
@@ -5173,6 +5177,11 @@ textarea {
 
 .liveCriteriaGrid strong {
   line-height: 1.45;
+}
+
+.liveTimeline strong {
+  color: var(--ink);
+  font-size: 15px;
 }
 
 .liveBudgetBar {
@@ -5209,6 +5218,25 @@ textarea {
 .trustNote p {
   line-height: 1.5;
   margin: 0;
+}
+
+.liveBudgetPlanner {
+  background: #f8faf8;
+  border: 1px solid var(--line);
+  border-radius: 20px;
+  display: grid;
+  gap: 14px;
+  padding: 16px;
+}
+
+.liveBudgetPlanner h3,
+.liveBudgetPlanner p {
+  margin: 0;
+}
+
+.liveBudgetPlanner p {
+  color: var(--muted);
+  line-height: 1.5;
 }
 
 .applicationQueue {

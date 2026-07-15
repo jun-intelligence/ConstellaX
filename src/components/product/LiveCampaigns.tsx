@@ -41,10 +41,13 @@ type LiveCampaign = {
   application_status: string;
   target_creator_niches: string[];
   target_platforms: string[];
-  target_locations: string[];
   min_followers: number;
   max_followers: number | null;
   creator_requirements: string | null;
+  usage_rights_type: string | null;
+  usage_rights_notes: string | null;
+  creator_notification_date: string | null;
+  selection_cutoff_date: string | null;
   brand_id: string | null;
   agency_id: string | null;
   created_at: string;
@@ -62,6 +65,11 @@ type CampaignApplication = {
   token_fee_amount: number;
   product_value: number;
   follower_count: number;
+  photography_budget: number;
+  videography_budget: number;
+  hair_makeup_budget: number;
+  other_fees_budget: number;
+  budget_notes: string | null;
   pitch: string;
   social_handle: string | null;
   portfolio_url: string | null;
@@ -84,21 +92,29 @@ const initialCampaignForm = {
   creator_slots: "5",
   target_creator_niches: "lifestyle, fashion, everyday utility",
   target_platforms: "Instagram, TikTok",
-  target_locations: "Singapore, Malaysia",
   min_followers: "10000",
   max_followers: "150000",
   creator_requirements: "Strong engagement quality, clean brand safety history, able to submit draft for approval.",
+  usage_rights_type: "free_reposting",
+  usage_rights_notes: "Brand may repost approved creator content organically with credit. Paid usage requires separate approval.",
+  creator_notification_date: "",
+  selection_cutoff_date: "",
   start_date: "",
   end_date: ""
 };
 
 const initialApplicationForm = {
-  compensation_type: "paid" as CompensationType,
+  compensation_type: "organic_seeding" as CompensationType,
   proposed_fee_min: "1000",
   proposed_fee_max: "2500",
   token_fee_amount: "0",
   product_value: "0",
   follower_count: "12000",
+  photography_budget: "0",
+  videography_budget: "0",
+  hair_makeup_budget: "0",
+  other_fees_budget: "0",
+  budget_notes: "Budget includes production support for shooting, editing, and styling where needed.",
   social_handle: "",
   portfolio_url: "",
   audience_notes: "Audience is mostly women 24-34 with strong interest in beauty, routine content, and premium lifestyle.",
@@ -120,6 +136,15 @@ const statusLabels: Record<ApplicationStatus, string> = {
   deal_created: "Deal created"
 };
 
+const productValueOptions = Array.from({ length: 21 }, (_, index) => String(index * 100));
+
+const usageRightsLabels: Record<string, string> = {
+  free_usage: "Free usage",
+  paid_usage: "Paid usage fee",
+  collab: "Collab",
+  free_reposting: "Free reposting"
+};
+
 function listFromInput(value: string) {
   return value
     .split(",")
@@ -133,6 +158,18 @@ function money(value: number | string | null | undefined, currency = "USD") {
 
 function rangeMoney(min: number | string | null | undefined, max: number | string | null | undefined, currency = "USD") {
   return `${money(min, currency)} - ${money(max, currency)}`;
+}
+
+function titleCase(value: string) {
+  return value
+    .replace(/_/g, " ")
+    .split(" ")
+    .map((word) => (word ? `${word[0].toUpperCase()}${word.slice(1)}` : ""))
+    .join(" ");
+}
+
+function titleCaseList(values: string[]) {
+  return values.map(titleCase).join(", ");
 }
 
 function suggestCreatorNiches(name: string, objective: string) {
@@ -252,7 +289,7 @@ export function LiveCampaigns() {
     let query = supabase
       .from("campaigns")
       .select(
-        "id,name,objective,status,campaign_budget,currency,campaign_region,start_date,end_date,compensation_type,creator_min_fee,creator_max_fee,product_value,product_value_min,product_value_max,token_fee_amount,creator_slots,application_status,target_creator_niches,target_platforms,target_locations,min_followers,max_followers,creator_requirements,brand_id,agency_id,created_at"
+        "id,name,objective,status,campaign_budget,currency,campaign_region,start_date,end_date,compensation_type,creator_min_fee,creator_max_fee,product_value,product_value_min,product_value_max,token_fee_amount,creator_slots,application_status,target_creator_niches,target_platforms,min_followers,max_followers,creator_requirements,usage_rights_type,usage_rights_notes,creator_notification_date,selection_cutoff_date,brand_id,agency_id,created_at"
       )
       .order("created_at", { ascending: false });
 
@@ -305,10 +342,13 @@ export function LiveCampaigns() {
       creator_slots: String(campaign.creator_slots || 1),
       target_creator_niches: campaign.target_creator_niches.join(", "),
       target_platforms: campaign.target_platforms.join(", "),
-      target_locations: campaign.target_locations.join(", "),
       min_followers: String(campaign.min_followers || 0),
       max_followers: campaign.max_followers ? String(campaign.max_followers) : "",
       creator_requirements: campaign.creator_requirements || "",
+      usage_rights_type: campaign.usage_rights_type || "free_reposting",
+      usage_rights_notes: campaign.usage_rights_notes || "",
+      creator_notification_date: campaign.creator_notification_date || "",
+      selection_cutoff_date: campaign.selection_cutoff_date || "",
       start_date: campaign.start_date || "",
       end_date: campaign.end_date || ""
     });
@@ -345,10 +385,13 @@ export function LiveCampaigns() {
         creator_slots: Number(campaignForm.creator_slots || 1),
         target_creator_niches: listFromInput(campaignForm.target_creator_niches),
         target_platforms: listFromInput(campaignForm.target_platforms),
-        target_locations: listFromInput(campaignForm.target_locations),
         min_followers: Number(campaignForm.min_followers || 0),
         max_followers: campaignForm.max_followers ? Number(campaignForm.max_followers) : null,
         creator_requirements: campaignForm.creator_requirements,
+        usage_rights_type: campaignForm.usage_rights_type,
+        usage_rights_notes: campaignForm.usage_rights_notes,
+        creator_notification_date: campaignForm.creator_notification_date || null,
+        selection_cutoff_date: campaignForm.selection_cutoff_date || null,
         start_date: campaignForm.start_date || null,
         end_date: campaignForm.end_date || null,
         application_status: "open",
@@ -395,6 +438,11 @@ export function LiveCampaigns() {
       token_fee_amount: Number(applicationForm.token_fee_amount || 0),
       product_value: Number(applicationForm.product_value || 0),
       follower_count: Number(applicationForm.follower_count || 0),
+      photography_budget: Number(applicationForm.photography_budget || 0),
+      videography_budget: Number(applicationForm.videography_budget || 0),
+      hair_makeup_budget: Number(applicationForm.hair_makeup_budget || 0),
+      other_fees_budget: Number(applicationForm.other_fees_budget || 0),
+      budget_notes: applicationForm.budget_notes || null,
       pitch: applicationForm.pitch,
       social_handle: applicationForm.social_handle || null,
       portfolio_url: applicationForm.portfolio_url || null,
@@ -460,7 +508,7 @@ export function LiveCampaigns() {
         contract_status: "drafting",
         nda_status: "drafting",
         due_date: selectedCampaign.end_date,
-        usage_rights: "Usage rights to be confirmed before creator approval."
+        usage_rights: `${usageRightsLabels[selectedCampaign.usage_rights_type || "free_reposting"] || "Usage rights"}: ${selectedCampaign.usage_rights_notes || "Usage terms to be confirmed before creator approval."}`
       })
       .select("id")
       .single();
@@ -478,7 +526,7 @@ export function LiveCampaigns() {
         { name: "Draft approval", amount: Math.round(creatorFee * 0.4) },
         { name: "Final delivery", amount: Math.round(creatorFee * 0.3) }
       ],
-      net_terms: "Net 30 after final content approval",
+      net_terms: "Net 60 upon completion",
       production_budget: selectedCampaign.product_value_max ?? selectedCampaign.product_value,
       usage_rights_fee: 0,
       notes: compensationLabels[application.compensation_type]
@@ -653,21 +701,25 @@ export function LiveCampaigns() {
                       </label>
                       <label>
                         Product value min
-                        <input
-                          min="0"
-                          type="number"
+                        <select
                           value={campaignForm.product_value_min}
                           onChange={(event) => setCampaignForm((current) => ({ ...current, product_value_min: event.target.value }))}
-                        />
+                        >
+                          {productValueOptions.map((value) => (
+                            <option key={value} value={value}>{money(value, campaignForm.currency)}</option>
+                          ))}
+                        </select>
                       </label>
                       <label>
                         Product value max
-                        <input
-                          min="0"
-                          type="number"
+                        <select
                           value={campaignForm.product_value_max}
                           onChange={(event) => setCampaignForm((current) => ({ ...current, product_value_max: event.target.value }))}
-                        />
+                        >
+                          {productValueOptions.map((value) => (
+                            <option key={value} value={value}>{money(value, campaignForm.currency)}</option>
+                          ))}
+                        </select>
                       </label>
                       <label>
                         Token fee
@@ -708,13 +760,6 @@ export function LiveCampaigns() {
                         />
                       </label>
                       <label>
-                        Locations
-                        <input
-                          value={campaignForm.target_locations}
-                          onChange={(event) => setCampaignForm((current) => ({ ...current, target_locations: event.target.value }))}
-                        />
-                      </label>
-                      <label>
                         Min followers
                         <input
                           min="0"
@@ -738,9 +783,43 @@ export function LiveCampaigns() {
                       value={campaignForm.creator_requirements}
                       onChange={(event) => setCampaignForm((current) => ({ ...current, creator_requirements: event.target.value }))}
                     />
+                    <div className="liveFieldGrid">
+                      <label>
+                        Usage rights
+                        <select
+                          value={campaignForm.usage_rights_type}
+                          onChange={(event) => setCampaignForm((current) => ({ ...current, usage_rights_type: event.target.value }))}
+                        >
+                          {Object.entries(usageRightsLabels).map(([value, label]) => (
+                            <option key={value} value={value}>{label}</option>
+                          ))}
+                        </select>
+                      </label>
+                      <label>
+                        Creator notified on
+                        <input
+                          type="date"
+                          value={campaignForm.creator_notification_date}
+                          onChange={(event) => setCampaignForm((current) => ({ ...current, creator_notification_date: event.target.value }))}
+                        />
+                      </label>
+                      <label>
+                        Selection cutoff
+                        <input
+                          type="date"
+                          value={campaignForm.selection_cutoff_date}
+                          onChange={(event) => setCampaignForm((current) => ({ ...current, selection_cutoff_date: event.target.value }))}
+                        />
+                      </label>
+                    </div>
+                    <textarea
+                      placeholder="Usage rights notes"
+                      value={campaignForm.usage_rights_notes}
+                      onChange={(event) => setCampaignForm((current) => ({ ...current, usage_rights_notes: event.target.value }))}
+                    />
                     <div className="liveCampaignDates">
                       <label>
-                        Start
+                        Campaign goes live
                         <input
                           type="date"
                           value={campaignForm.start_date}
@@ -748,7 +827,7 @@ export function LiveCampaigns() {
                         />
                       </label>
                       <label>
-                        End
+                        Final delivery
                         <input
                           type="date"
                           value={campaignForm.end_date}
@@ -807,16 +886,15 @@ export function LiveCampaigns() {
                     <CampaignSelector campaigns={campaigns} selectedCampaignId={selectedCampaign?.id} onSelect={setSelectedCampaignId} />
                     <div className="liveFieldGrid">
                       <label>
-                        Compensation
+                        Application type
                         <select
                           value={applicationForm.compensation_type}
                           onChange={(event) =>
                             setApplicationForm((current) => ({ ...current, compensation_type: event.target.value as CompensationType }))
                           }
                         >
-                          {Object.entries(compensationLabels).map(([value, label]) => (
-                            <option key={value} value={value}>{label}</option>
-                          ))}
+                          <option value="organic_seeding">Organic seeding</option>
+                          <option value="paid">State a rate</option>
                         </select>
                       </label>
                       <label>
@@ -865,9 +943,58 @@ export function LiveCampaigns() {
                         />
                       </label>
                     </div>
+                    <div className="liveBudgetPlanner">
+                      <div>
+                        <h3>Creator budget planning</h3>
+                        <p>Break down what you need to produce the content, so brands can understand where resources go.</p>
+                      </div>
+                      <div className="liveFieldGrid">
+                        <label>
+                          Photography
+                          <input
+                            min="0"
+                            type="number"
+                            value={applicationForm.photography_budget}
+                            onChange={(event) => setApplicationForm((current) => ({ ...current, photography_budget: event.target.value }))}
+                          />
+                        </label>
+                        <label>
+                          Videography
+                          <input
+                            min="0"
+                            type="number"
+                            value={applicationForm.videography_budget}
+                            onChange={(event) => setApplicationForm((current) => ({ ...current, videography_budget: event.target.value }))}
+                          />
+                        </label>
+                        <label>
+                          Hair and makeup
+                          <input
+                            min="0"
+                            type="number"
+                            value={applicationForm.hair_makeup_budget}
+                            onChange={(event) => setApplicationForm((current) => ({ ...current, hair_makeup_budget: event.target.value }))}
+                          />
+                        </label>
+                        <label>
+                          Other fees
+                          <input
+                            min="0"
+                            type="number"
+                            value={applicationForm.other_fees_budget}
+                            onChange={(event) => setApplicationForm((current) => ({ ...current, other_fees_budget: event.target.value }))}
+                          />
+                        </label>
+                      </div>
+                      <textarea
+                        placeholder="Budget planning notes"
+                        value={applicationForm.budget_notes}
+                        onChange={(event) => setApplicationForm((current) => ({ ...current, budget_notes: event.target.value }))}
+                      />
+                    </div>
                     <div className="trustNote">
                       <Sparkles size={18} />
-                      <p>{suggestedCompensationByFollowers(Number(applicationForm.follower_count || 0))}. Brands can review the range and re-negotiate with AI-supported rate intelligence.</p>
+                      <p>{suggestedCompensationByFollowers(Number(applicationForm.follower_count || 0))}. Organic seeding applications can submit with no fee, while paid applicants can state the range they can work with.</p>
                     </div>
                     <input
                       placeholder="@socialhandle"
@@ -1121,19 +1248,44 @@ function CampaignControlPanel({
 
       <div className="liveCriteriaGrid">
         <Criteria label="Compensation" value={compensationLabels[campaign.compensation_type]} />
-        <Criteria label="Applications" value={campaign.application_status} />
-        <Criteria label="Niches" value={campaign.target_creator_niches.join(", ") || "Open"} />
+        <Criteria label="Applications" value={titleCase(campaign.application_status || "open")} />
+        <Criteria label="Niches" value={titleCaseList(campaign.target_creator_niches) || "Open"} />
         <Criteria label="Platforms" value={campaign.target_platforms.join(", ") || "Open"} />
-        <Criteria label="Locations" value={campaign.target_locations.join(", ") || "Open"} />
+        <Criteria label="Usage" value={usageRightsLabels[campaign.usage_rights_type || "free_reposting"] || "Free reposting"} />
         <Criteria
           label="Followers"
           value={`${campaign.min_followers.toLocaleString()} - ${campaign.max_followers?.toLocaleString() || "open"}`}
         />
+        <Criteria label="Payment" value="Net 60 upon completion" />
+      </div>
+
+      <div className="liveTimeline">
+        <div>
+          <span>Campaign goes live</span>
+          <strong>{campaign.start_date || "Pending"}</strong>
+        </div>
+        <div>
+          <span>Creators notified</span>
+          <strong>{campaign.creator_notification_date || "Pending"}</strong>
+        </div>
+        <div>
+          <span>Selection cutoff</span>
+          <strong>{campaign.selection_cutoff_date || "Pending"}</strong>
+        </div>
+        <div>
+          <span>Final delivery</span>
+          <strong>{campaign.end_date || "Pending"}</strong>
+        </div>
       </div>
 
       <div className="trustNote">
         <CheckCircle2 size={18} />
         <p>{campaign.creator_requirements || "Creator requirements will appear here."}</p>
+      </div>
+
+      <div className="trustNote">
+        <ShieldCheck size={18} />
+        <p>{campaign.usage_rights_notes || "Usage rights and reposting terms will appear here."}</p>
       </div>
 
       {isCampaignOwner ? (
@@ -1189,6 +1341,13 @@ function ApplicationList({
               <span>{Number(application.follower_count || 0).toLocaleString()} followers</span>
               <span>{application.social_handle || "Handle pending"}</span>
             </div>
+            <div className="liveApplicantMeta">
+              <span>Photo {money(application.photography_budget)}</span>
+              <span>Video {money(application.videography_budget)}</span>
+              <span>H&MU {money(application.hair_makeup_budget)}</span>
+              <span>Other {money(application.other_fees_budget)}</span>
+            </div>
+            {application.budget_notes ? <p>{application.budget_notes}</p> : null}
             {application.audience_notes ? <p>{application.audience_notes}</p> : null}
             <div className="liveActionRow">
               <button disabled={saving} onClick={() => onUpdateStatus(application, "shortlisted")} type="button">

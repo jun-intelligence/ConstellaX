@@ -29,6 +29,10 @@ alter table public.campaigns add column if not exists target_locations text[] no
 alter table public.campaigns add column if not exists min_followers integer not null default 0 check (min_followers >= 0);
 alter table public.campaigns add column if not exists max_followers integer check (max_followers is null or max_followers >= min_followers);
 alter table public.campaigns add column if not exists creator_requirements text;
+alter table public.campaigns add column if not exists usage_rights_type text not null default 'free_reposting';
+alter table public.campaigns add column if not exists usage_rights_notes text;
+alter table public.campaigns add column if not exists creator_notification_date date;
+alter table public.campaigns add column if not exists selection_cutoff_date date;
 
 alter table public.campaigns drop constraint if exists campaigns_has_owner;
 alter table public.campaigns add constraint campaigns_has_owner check (brand_id is not null or agency_id is not null);
@@ -63,6 +67,11 @@ create table if not exists public.campaign_applications (
 alter table public.campaign_applications add column if not exists proposed_fee_min numeric(12, 2) not null default 0 check (proposed_fee_min >= 0);
 alter table public.campaign_applications add column if not exists proposed_fee_max numeric(12, 2) not null default 0 check (proposed_fee_max >= 0);
 alter table public.campaign_applications add column if not exists follower_count integer not null default 0 check (follower_count >= 0);
+alter table public.campaign_applications add column if not exists photography_budget numeric(12, 2) not null default 0 check (photography_budget >= 0);
+alter table public.campaign_applications add column if not exists videography_budget numeric(12, 2) not null default 0 check (videography_budget >= 0);
+alter table public.campaign_applications add column if not exists hair_makeup_budget numeric(12, 2) not null default 0 check (hair_makeup_budget >= 0);
+alter table public.campaign_applications add column if not exists other_fees_budget numeric(12, 2) not null default 0 check (other_fees_budget >= 0);
+alter table public.campaign_applications add column if not exists budget_notes text;
 
 drop trigger if exists campaign_applications_set_updated_at on public.campaign_applications;
 create trigger campaign_applications_set_updated_at before update on public.campaign_applications
